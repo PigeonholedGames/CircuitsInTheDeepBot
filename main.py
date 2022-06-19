@@ -1,4 +1,5 @@
 import discord
+from discord.utils import get
 
 client = discord.Client()
 
@@ -7,10 +8,21 @@ async def on_ready():
     print('We have logged in as {0.user}'.format(client))
 
 @client.event
-async def on_guild_join(context):
-    server = context
-    rollschannel = await server.create_text_channel("Rolls")
-    chargenchannel = await server.create_text_channel("Character_Creation")
+async def on_guild_join(server):
+
+    category = get(server.categories, name='Bot Controls')
+
+    if category is None:
+        category = await server.create_category_channel('Bot Controls')
+
+    if get(category.channels, name='character-creation') is None:
+        await server.create_text_channel('character-creation', category=category)
+
+    if get(category.channels, name='rolls') is None:
+        await server.create_text_channel('rolls', category=category)
+
+    if get(category.channels, name='clocks') is None:
+        await server.create_text_channel('clocks', category=category)
 
 @client.event
 async def on_message(context):
@@ -34,4 +46,22 @@ async def on_message(context):
         if context.content.startswith('>>clock'):
             print('clock works')
 
-client.run('OTg3NjM5OTc3MjA4ODQwMTky.GSukVJ.W9lkkQ6MN27XjnCj0Q6R2BZjUKR9pOzSQcbmKM')
+        if context.content.startswith('>>setup'):
+
+            server = context.guild
+            category = get(server.categories, name='Bot Controls')
+
+            if category is None:
+                category = await server.create_category_channel('Bot Controls')
+
+            if get(category.channels, name='character-creation') is None:
+                await server.create_text_channel('character-creation', category=category)
+
+            if get(category.channels, name='rolls') is None:
+                await server.create_text_channel('rolls', category=category)
+
+            if get(category.channels, name='clocks') is None:
+                await server.create_text_channel('clocks', category=category)
+
+
+client.run(open('config.ini').readline())
