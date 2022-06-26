@@ -1,6 +1,8 @@
 import discord
 from discord.utils import get
 
+import servmanager
+
 client = discord.Client()
 
 
@@ -12,20 +14,7 @@ async def on_ready():
 # when the bot joins a server it creates a text channel category and text channels under it
 @client.event
 async def on_guild_join(server):
-    category = get(server.categories, name='Bot Controls')  # get category
-
-    if category is None:  # check if category exists before making it
-        category = await server.create_category_channel('Bot Controls')
-
-    if get(category.channels, name='character-creation') is None:  # character-creation channel gets made
-        await server.create_text_channel('character-creation', category=category)
-
-    if get(category.channels, name='rolls') is None:  # rolls channel gets made
-        await server.create_text_channel('rolls', category=category)
-
-    if get(category.channels, name='clocks') is None:  # clocks channel gets made
-        await server.create_text_channel('clocks', category=category)
-
+    servmanager.create_channels(server)
 
 # listener for messages
 @client.event
@@ -59,21 +48,8 @@ async def on_message(context):
 
         # the setup command remakes the category and channels that should have been created on join
         elif context.content.startswith('>>setup'):
+            servmanager.create_channels(context.guild)
 
-            server = context.guild
-            category = get(server.categories, name='Bot Controls')  # get the category
-
-            if category is None:  # check if the category exists before making it
-                category = await server.create_category_channel('Bot Controls')
-
-            if get(category.channels, name='character-creation') is None:  # character-creation channel gets made
-                await server.create_text_channel('character-creation', category=category)
-
-            if get(category.channels, name='rolls') is None:  # rolls channel gets made
-                await server.create_text_channel('rolls', category=category)
-
-            if get(category.channels, name='clocks') is None:  # clocks channel gets made
-                await server.create_text_channel('clocks', category=category)
-
+    return
 
 client.run(open('config.ini').readline())  # get the bot token from a local config file
