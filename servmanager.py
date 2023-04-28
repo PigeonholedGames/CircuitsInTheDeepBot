@@ -1,10 +1,9 @@
 from discord.utils import get
 
-
-# function to create text channel category and fill it up
 import charmaker
 
 
+# function to create text channel category and fill it up
 async def create_channels(server):
     category = get(server.categories, name='Bot Controls')  # get category
     if category is None:  # check if category exists before making it
@@ -28,7 +27,9 @@ async def start_chargen(interaction):
     # if the category hasn't been setup, inform the user and exit the process
     if category is None:
         channel = interaction.channel
-        await channel.send('This server has not been properly setup. Please use the "/setup" command.')
+        await interaction.response.send_message(
+            'This server has not been properly setup or the bot channels have been deleted. Please use the "/setup" command before trying again.',
+            ephemeral=True)
         return
 
     channel = get(category.channels, name='character-creation')  # get the channel
@@ -36,15 +37,21 @@ async def start_chargen(interaction):
     # if the channel hasn't been setup, inform the user and exit the process
     if channel is None:
         channel = interaction.channel
-        await channel.send('This server has not been properly setup. Please use the "/setup" command.')
+        await interaction.response.send_message(
+            'This server has not been properly setup or the bot channels have been deleted. Please use the "/setup" command before trying again.',
+            ephemeral=True)
         return
 
-    author = interaction.user  # get the user who is creating the character
+    # get the user who is creating the character
+    author = interaction.user
 
-    message = await channel.send(f"{author.mention} we'll make a character here.")  # send a message pinging the user
-    thread = await channel.create_thread(name="{}\'s Character".format(author.name), message=message,
-                                         auto_archive_duration=60, reason="Character Creation Thread for {}".format(
-            author.name))  # make a thread around the ping
+    # make a thread around the ping
+    thread = await channel.create_thread(name="{}\'s Character".format(author.name),
+                                         auto_archive_duration=60,
+                                         reason="Character Creation Thread for {}".format(author.name))
+
+    # now that we've collected all the relevant info from the interaction we can close it
+    await interaction.response.send_message(f"Head over to {thread.mention} to begin.")
 
     # begin the character creation process
     await charmaker.chargen(thread, author)
