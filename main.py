@@ -1,7 +1,7 @@
 import asyncio
 import discord
 from discord import app_commands
-import servmanager
+import commandmanager
 import dbmanager
 
 
@@ -27,16 +27,17 @@ class circbot(discord.Client):
         if channel.permissions_for(server.me).send_messages:
             await channel.send("Hello! Thank you for your interest in Circuits In the Deep!")
             await channel.send("Please hold while we remodel your server.")
-            await asyncio.sleep(1)
+            await asyncio.sleep(1.5)
             await channel.send(":smiley:")
-            await asyncio.sleep(1)
+            await asyncio.sleep(1.5)
             await channel.send("Please do not delete or rename the bot controls category or its text channels.")
             await channel.send("Type /help to see available commands.")
 
         # actually setting up the server
-        await servmanager.create_channels(server)
+        await commandmanager.create_channels(server)
 
 
+# let's gooooooooo
 client = circbot()
 tree = app_commands.CommandTree(client)
 
@@ -57,7 +58,7 @@ async def self(interaction: discord.Interaction):
 # setup command, fixes server channels if the mods broke them for whatever reason
 @tree.command(name="setup", description="Re-Create Deleted Bot Channels")
 async def self(interaction: discord.Interaction):
-    await servmanager.create_channels(interaction.guild)
+    await commandmanager.create_channels(interaction.guild)
     await interaction.response.send_message("Category and Channels have been remade, please do not delete or rename "
                                             "them.", ephemeral=True)
 
@@ -65,7 +66,8 @@ async def self(interaction: discord.Interaction):
 # create command, starts up character creation
 @tree.command(name="create", description="Begins Character Creation")
 async def self(interaction: discord.Interaction):
-    await servmanager.start_chargen(interaction)
+    await commandmanager.start_chargen(interaction)
 
 
-client.run(open('config.ini').readline())  # get the bot token from a local config file
+# get the bot token from a local config file
+client.run(open('config.ini').readline())

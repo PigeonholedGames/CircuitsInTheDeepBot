@@ -1,4 +1,3 @@
-
 class Character:
 
     def __init__(self, aptitudenames, aptitudestats, skillnames, skillstats, server, thread, player, name, playbook,
@@ -119,7 +118,7 @@ class Character:
         }
 
         # a dictionary containing all aptitudes, their levels, and their level up conditions
-        self.aptitudeprogress = {
+        self.aptitudes = {
             aptitudenames[0]: (
                 aptitudestats[0][0], aptitudestats[0][1], aptitudestats[0][2], aptitudestats[0][3],
                 aptitudestats[0][4]),
@@ -157,6 +156,155 @@ class Character:
                 aptitudestats[11][0], aptitudestats[11][1], aptitudestats[11][2], aptitudestats[11][3],
                 aptitudestats[11][4]),
         }
+
+    # makes an empty character
+    def __init__(self, aptitudenames, skillnames, server, thread, player):
+        self.server = server
+        self.thread = thread
+        self.player = player
+        self.name = " "
+        self.alias = " "
+        self.playbook = " "
+        self.abilities = " "
+        self.traits = " "
+        self.luck = 9
+        self.realization = 0
+        self.harm1 = ''
+        self.harm2 = ''
+        self.harm3 = ''
+
+        # a dictionary of all aptitudes containing a nested dictionary of its skills alongside their stat requirement
+        self.skills = {
+            aptitudenames[0]: {
+                skillnames[0]: [0, 0],
+                skillnames[1]: [0, 0],
+                skillnames[2]: [0, 0],
+                skillnames[3]: [0, 0],
+                skillnames[4]: [0, 0],
+                skillnames[5]: [0, 2],
+                skillnames[6]: [0, 4]},
+            aptitudenames[1]: {
+                skillnames[7]: [0, 0],
+                skillnames[8]: [0, 0],
+                skillnames[9]: [0, 0],
+                skillnames[10]: [0, 0],
+                skillnames[11]: [0, 0],
+                skillnames[12]: [0, 2],
+                skillnames[13]: [0, 4]},
+            aptitudenames[2]: {
+                skillnames[14]: [0, 0],
+                skillnames[15]: [0, 0],
+                skillnames[16]: [0, 0],
+                skillnames[17]: [0, 0],
+                skillnames[18]: [0, 0],
+                skillnames[19]: [0, 2],
+                skillnames[20]: [0, 4]},
+            aptitudenames[3]: {
+                skillnames[21]: [0, 0],
+                skillnames[22]: [0, 0],
+                skillnames[23]: [0, 0],
+                skillnames[24]: [0, 0],
+                skillnames[25]: [0, 0],
+                skillnames[26]: [0, 2],
+                skillnames[27]: [0, 4]},
+            aptitudenames[4]: {
+                skillnames[28]: [0, 0],
+                skillnames[29]: [0, 0],
+                skillnames[30]: [0, 0],
+                skillnames[31]: [0, 0],
+                skillnames[32]: [0, 0],
+                skillnames[33]: [0, 2],
+                skillnames[34]: [0, 4]},
+            aptitudenames[5]: {
+                skillnames[35]: [0, 0],
+                skillnames[36]: [0, 0],
+                skillnames[37]: [0, 0],
+                skillnames[38]: [0, 0],
+                skillnames[39]: [0, 0],
+                skillnames[40]: [0, 2],
+                skillnames[41]: [0, 4]},
+            aptitudenames[6]: {
+                skillnames[42]: [0, 0],
+                skillnames[43]: [0, 0],
+                skillnames[44]: [0, 0],
+                skillnames[45]: [0, 0],
+                skillnames[46]: [0, 0],
+                skillnames[47]: [0, 2],
+                skillnames[48]: [0, 4]},
+            aptitudenames[7]: {
+                skillnames[49]: [0, 0],
+                skillnames[50]: [0, 0],
+                skillnames[51]: [0, 0],
+                skillnames[52]: [0, 0],
+                skillnames[53]: [0, 0],
+                skillnames[54]: [0, 2],
+                skillnames[55]: [0, 4]},
+            aptitudenames[8]: {
+                skillnames[56]: [0, 0],
+                skillnames[57]: [0, 0],
+                skillnames[58]: [0, 0],
+                skillnames[59]: [0, 0],
+                skillnames[60]: [0, 0],
+                skillnames[61]: [0, 2],
+                skillnames[62]: [0, 4]},
+            aptitudenames[9]: {
+                skillnames[63]: [0, 0],
+                skillnames[64]: [0, 0],
+                skillnames[65]: [0, 0],
+                skillnames[66]: [0, 0],
+                skillnames[67]: [0, 0],
+                skillnames[68]: [0, 2],
+                skillnames[69]: [0, 4]},
+            aptitudenames[10]: {
+                skillnames[70]: [0, 0],
+                skillnames[71]: [0, 0],
+                skillnames[72]: [0, 0],
+                skillnames[73]: [0, 0],
+                skillnames[74]: [0, 0],
+                skillnames[75]: [0, 2],
+                skillnames[76]: [0, 4]},
+            aptitudenames[11]: {
+                skillnames[77]: [0, 0],
+                skillnames[78]: [0, 0],
+                skillnames[79]: [0, 0],
+                skillnames[80]: [0, 0],
+                skillnames[81]: [0, 0],
+                skillnames[82]: [0, 2],
+                skillnames[83]: [0, 4]}
+        }
+
+        # a dictionary containing all aptitudes, their levels, and their level up conditions
+        self.aptitudes = {
+            aptitudenames[0]: (0, 0),
+            aptitudenames[1]: (0, 0),
+            aptitudenames[2]: (0, 0),
+            aptitudenames[3]: (0, 0),
+            aptitudenames[4]: (0, 0),
+            aptitudenames[5]: (0, 0),
+            aptitudenames[6]: (0, 0),
+            aptitudenames[7]: (0, 0),
+            aptitudenames[8]: (0, 0),
+            aptitudenames[9]: (0, 0),
+            aptitudenames[10]: (0, 0),
+            aptitudenames[11]: (0, 0),
+        }
+
+    def __init__(self, character):
+        self.server = character.server
+        self.thread = character.thread
+        self.player = character.player
+        self.name = character.name
+        self.alias = character.alias
+        self.playbook = character.playbook
+        self.abilities = character.abilities
+        self.traits = character.traits
+        self.luck = character.luck
+        self.realization = character.realization
+        self.harm1 = character.harm1
+        self.harm2 = character.harm2
+        self.harm3 = character.harm3
+        self.skills = character.skills
+        self.aptitudes = character.aptitudes
 
     def getServer(self):
         return self.server
