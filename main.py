@@ -1,12 +1,11 @@
 import asyncio
 import discord
 from discord import app_commands
-import commandmanager
-import dbmanager
+import commands
+import db
 
 
 class circbot(discord.Client):
-    # def init that shit self yeah you got it
     def __init__(self):
         super().__init__(intents=discord.Intents.all())
         self.synced = False
@@ -33,8 +32,8 @@ class circbot(discord.Client):
             await channel.send("Please do not delete or rename the bot controls category or its text channels.")
             await channel.send("Type /help to see available commands.")
 
-        # actually setting up the server
-        await commandmanager.create_channels(server)
+        # actually setting stuff up
+        await commands.create_channels(server)
 
 
 # let's gooooooooo
@@ -58,7 +57,7 @@ async def self(interaction: discord.Interaction):
 # setup command, fixes server channels if the mods broke them for whatever reason
 @tree.command(name="setup", description="Re-Create Deleted Bot Channels")
 async def self(interaction: discord.Interaction):
-    await commandmanager.create_channels(interaction.guild)
+    await commands.create_channels(interaction.guild)
     await interaction.response.send_message("Category and Channels have been remade, please do not delete or rename "
                                             "them.", ephemeral=True)
 
@@ -66,7 +65,7 @@ async def self(interaction: discord.Interaction):
 # create command, starts up character creation
 @tree.command(name="create", description="Begins Character Creation")
 async def self(interaction: discord.Interaction):
-    await commandmanager.start_chargen(interaction)
+    await commands.start_chargen(interaction)
 
 
 # get the bot token from a local config file

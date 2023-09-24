@@ -1,21 +1,25 @@
 from discord.utils import get
 
-import charmaker
+import chargen
 
 
 # function to create text channel category and fill it up
 async def create_channels(server):
-    category = get(server.categories, name='Bot Controls')  # get category
-    if category is None:  # check if category exists before making it
+
+    category = get(server.categories, name='Bot Controls')
+
+    # make the category
+    if category is None:
         category = await server.create_category_channel('Bot Controls')
 
-    if get(category.channels, name='character-creation') is None:  # character-creation channel gets made
+    # make all the channels
+    if get(category.channels, name='character-creation') is None:
         await server.create_text_channel('character-creation', category=category)
 
-    if get(category.channels, name='rolls') is None:  # rolls channel gets made
+    if get(category.channels, name='rolls') is None:
         await server.create_text_channel('rolls', category=category)
 
-    if get(category.channels, name='clocks') is None:  # clocks channel gets made
+    if get(category.channels, name='clocks') is None:
         await server.create_text_channel('clocks', category=category)
     return
 
@@ -54,5 +58,5 @@ async def start_chargen(interaction):
     await interaction.response.send_message(f"Head over to {thread.mention} to begin.")
 
     # begin the character creation process
-    await charmaker.chargen(thread, author)
+    await chargen.begin(thread, author)
     return
