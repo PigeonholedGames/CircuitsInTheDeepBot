@@ -16,7 +16,7 @@ gamedata = gd.cursor()
 
 
 # function to query the lifepaths database
-def queryLifepaths(location, age, links):
+def queryLifepath(location, age, links):
     q = lifepaths.execute(
         "SELECT NAME,LINKS,APTITUDES0,APTITUDES1,APTITUDES2,APTITUDES3,APTITUDES4,SKILLS0,SKILLS1,SKILLS2,SKILLS3,SKILLS4,SKILLS5,SKILLS6,SKILLS7,SKILLS8,SKILLS9,DESCRIPTION,QUESTIONS,END FROM {} "
         "WHERE AGE='{}' "

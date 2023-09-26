@@ -1,7 +1,7 @@
 class Character:
 
-    def __init__(self, aptitudenames, aptitudestats=None, skillnames='', skillstats=None, server='', thread='', player='', name='', playbook='', stuff='', traits='', luck=9, realization=0, harm1='', harm1clock=0, harm2='', harm2clock=0, harm3='', harm3clock=0):
-
+    def __new__(cls, aptitudenames, aptitudestats=None, skillnames='', skillstats=None, server='', thread='', player='', name='', playbook='', stuff=[], traits=[], luck=9, realization=0, harm1='', harm1clock=0, harm2='', harm2clock=0, harm3='', harm3clock=0):
+        self = super().__new__(cls)
         self.server = server
         self.thread = thread
         self.player = player
