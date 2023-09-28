@@ -28,7 +28,7 @@ class circbot(discord.Client):
             await channel.send("Please hold while we remodel your server.")
             await asyncio.sleep(1.5)
             await channel.send(":smiley:")
-            await asyncio.sleep(1.5)
+            await asyncio.sleep(2.5)
             await channel.send("Please do not delete or rename the bot controls category or its text channels.")
             await channel.send("Type /help to see available commands.")
 

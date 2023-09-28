@@ -10,20 +10,21 @@ import character
 async def begin(thread, author):
     # pings the player otherwise they won't be added to the thread
     await thread.send(f"Hi {author.mention}, we'll make a character here.")
-    await asyncio.sleep(0.75)
+    await asyncio.sleep(2.00)
 
     # explanation messages
     await thread.send("Character creation in Circuits in the Deep uses a lifepath system.")
-    await asyncio.sleep(0.75)
-    await thread.send("This means that we'll go through the broad strokes of your backstory.")
-    await asyncio.sleep(0.75)
-    await thread.send("You'll be presented with several options for each stage of your life.")
-    await asyncio.sleep(0.75)
+    await asyncio.sleep(0.95)
     await thread.send(
-        "Depending on your choice you'll gain some stats and change what lifepaths you have access to further down the line.")
-    await asyncio.sleep(0.75)
+        "This means that we'll go through the broad strokes of your backstory and you'll decide what you were doing during each stage of your life.")
+    await asyncio.sleep(2.05)
+    await thread.send("Your choices will grant you some stats and unlock different lifepaths later down the line.")
+    await asyncio.sleep(1.05)
+    await thread.send(
+        "But first you'll pick your trappings, which describe the role you'll end up filling within the crew.")
+    await asyncio.sleep(1.45)
     await thread.send("Without further ado:")
-    await asyncio.sleep(0.75)
+    await asyncio.sleep(0.1)
     # begin!
     gen = Chargen(thread, author)
     await gen.layer0()
@@ -33,33 +34,37 @@ async def begin(thread, author):
 class Chargen:
 
     def __init__(self, thread, author):
-        # variables that ill need in every stage
-        self.character0 = None
-        self.links0 = ''
-        self.character1 = None
-        self.links1 = ''
+        # lists for variables that ill need in every stage
+        self.characters = []
+        self.location = []
+        self.links = []
 
         # and some simple global ones
         self.thread = thread
         self.author = author
         self.currentlayer = None
 
-    # handles picking a birth lifepath
+    # handles picking trappings
     async def layer0(self):
+        self.currentlayer = 0
+        self.characters.append(character.Character(aptitudenames=db.queryAptitudeNames(),
+                                                   skillnames=db.querySkillNames(), server=self.thread.guild,
+                                                   thread=self.thread, player=self.author))
+        await self.nextLayer("")
+
+    # handles picking a birth location
+    async def layer1(self):
+        self.currentlayer = 1
+        await self.nextLayer("NEWATLANTIS")
+
+    # handles picking a birth lifepath
+    async def layer2(self):
 
         # set the layer
-        self.currentlayer = 0
-
-        # makes the character for this layer
-        self.character0 = character.Character(aptitudenames=db.queryAptitudeNames(),
-                                              skillnames=db.querySkillNames(), server=self.thread.guild,
-                                              thread=self.thread, player=self.author)
-
-        # empties the links in case we've gone back
-        self.links0 = ''
+        self.currentlayer = 2
 
         # first we get all the lifepaths for this age
-        lifepaths = db.queryLifepaths(location="NEWATLANTIS", age="BIRTH")
+        lifepaths = db.queryLifepaths(location=self.location[0], age="BIRTH")
 
         # and check that we actually got them
         if len(lifepaths) == 0:
@@ -68,7 +73,7 @@ class Chargen:
 
         # we make the embed to display the first lifepath
         embed = discord.Embed(title='Birth',
-                              description='You don\'t remember much from your first few years on Earth, so you won\'t get any skills from this choice. Instead, this will tell us a little about who your parents were.',
+                              description='You don\'t remember much from your first few years on Earth, so you won\'t get any stats from this choice. Instead, this will tell us a little about who your parents were.',
                               color=0x288830)
         embed.set_footer(
             text="Browse through the lifepaths using the drop-down list.")
@@ -82,19 +87,19 @@ class Chargen:
         # go! be free my lil message! be displayed!
         await self.thread.send(embed=embed, view=view)
 
-    # handles picking a childhood lifepath
-    async def layer1(self, links):
+    # handles picking childhood location
+    async def layer3(self):
         # hi we're here
-        self.currentlayer = 1
+        self.currentlayer = 3
+        await self.nextLayer("NEWATLANTIS")
 
-        # makes the character for this layer
-        self.character1 = copy.deepcopy(self.character0)
-
-        # set the links for this layer
-        self.links1 = links
+    # handles picking a childhood lifepath
+    async def layer4(self):
+        # hi we're here
+        self.currentlayer = 4
 
         # first we get all the lifepaths for this age
-        lifepaths = db.queryLifepath(location="NEWATLANTIS", age="CHILD", links=self.links1)
+        lifepaths = db.queryLifepath(location=self.location[1], age="CHILD", links=self.links[0])
 
         # and check that we actually got them
         if len(lifepaths) == 0:
@@ -109,7 +114,8 @@ class Chargen:
             text="Browse through the lifepaths using the drop-down list.")
 
         # then the drop-down menu with all the rest
-        select = selectLifepath(chargen=self, lifepaths=lifepaths, placeholder='What is a core memory from your childhood?')
+        select = selectLifepath(chargen=self, lifepaths=lifepaths,
+                                placeholder='What is a core memory from your childhood?')
 
         # then the view that will house the drop-down list and the navigation buttons
         view = ButtonView(select=select, chargen=self)
@@ -118,142 +124,315 @@ class Chargen:
         await self.thread.send(embed=embed, view=view)
 
     # handles picking an aptitude from childhood
-    async def layer2(self, links):
-        # hi we're here
-        self.currentlayer = 2
-
-        # makes the character for this layer
-        character1 = character(self.character0)
-
-    # handles picking skills from childhood
-    async def layer3(self, links):
-        # hi we're here
-        self.currentlayer = 3
-
-        # makes the character for this layer
-        character1 = character(self.character0)
-
-    # handles picking a teenage lifepath
-    async def layer4(self, links):
-        # hi we're here
-        self.currentlayer = 4
-
-        # makes the character for this layer
-        character1 = character(self.character0)
-
-    # handles picking an aptitude from teenage years
-    async def layer5(self, links):
+    async def layer5(self):
         # hi we're here
         self.currentlayer = 5
+        self.characters.append(copy.deepcopy(self.characters[0]))
 
-        # makes the character for this layer
-        character1 = character(self.character0)
+        await self.nextLayer()
 
-    # handles picking skills from teenage years
-    async def layer6(self, links):
+    # handles picking the first skill from childhood
+    async def layer6(self):
         # hi we're here
         self.currentlayer = 6
 
         # makes the character for this layer
-        character1 = character(self.character0)
+        self.characters.append(copy.deepcopy(self.characters[1]))
 
-    # handles picking a young adult lifepath
-    async def layer7(self, links):
+        await self.nextLayer()
+
+    # handles picking the second skill from childhood
+    async def layer7(self):
         # hi we're here
         self.currentlayer = 7
 
         # makes the character for this layer
-        character1 = character(self.character0)
+        self.characters.append(copy.deepcopy(self.characters[2]))
 
-    # handles picking an aptitude from young adulthood
-    async def layer8(self, links):
+        await self.nextLayer()
+
+    # handles picking a teen location
+    async def layer8(self):
         # hi we're here
         self.currentlayer = 8
 
-        # makes the character for this layer
-        character1 = character(self.character0)
+        await self.nextLayer("NEWATLANTIS")
 
-    # handles picking skills from young adulthood
-    async def layer9(self, links):
+    # handles picking a teen lifepath
+    async def layer9(self):
         # hi we're here
         self.currentlayer = 9
 
-        # makes the character for this layer
-        character1 = character(self.character0)
+        # first we get all the lifepaths for this age
+        lifepaths = db.queryLifepath(location=self.location[2], age="TEEN", links=self.links[1])
 
-    # handles picking the first adult lifepath
-    async def layer10(self, links):
+        # and check that we actually got them
+        if len(lifepaths) == 0:
+            await self.thread.send("Something has gone terribly wrong, please contact us.")
+            raise Exception("Lifepaths query empty.")
+
+        # we make the embed to display the first lifepath
+        embed = discord.Embed(title='Teenage Years',
+                              description='You\'ve begun to grow into your own person, but there\'s still a long way to go.',
+                              color=0x288830)
+        embed.set_footer(
+            text="Browse through the lifepaths using the drop-down list.")
+
+        # then the drop-down menu with all the rest
+        select = selectLifepath(chargen=self, lifepaths=lifepaths,
+                                placeholder='What were you doing during your teenage years?')
+
+        # then the view that will house the drop-down list and the navigation buttons
+        view = ButtonView(select=select, chargen=self)
+
+        # go! be free my lil message! be displayed!
+        await self.thread.send(embed=embed, view=view)
+
+    # handles picking an aptitude from the teenage years
+    async def layer10(self):
         # hi we're here
         self.currentlayer = 10
 
         # makes the character for this layer
-        character1 = character(self.character0)
+        self.characters.append(copy.deepcopy(self.characters[3]))
 
-    # moving ooooooon moving on
-    async def nextLayer(self, links):
-        if self.currentlayer == 0:
-            await self.layer1(links=links)
-        elif self.currentlayer == 1:
-            await self.layer2(links=links)
-        elif self.currentlayer == 2:
-            await self.layer3(links=links)
-        elif self.currentlayer == 3:
-            await self.layer4(links=links)
-        elif self.currentlayer == 4:
-            await self.layer5(links=links)
-        elif self.currentlayer == 5:
-            await self.layer6(links=links)
-        elif self.currentlayer == 6:
-            await self.layer7(links=links)
-        elif self.currentlayer == 7:
-            await self.layer8(links=links)
-        elif self.currentlayer == 8:
-            await self.layer9(links=links)
-        elif self.currentlayer == 9:
-            await self.layer10(links=links)
-        elif self.currentlayer == 10:
-            await self.layer11(links=links)
-        elif self.currentlayer == 11:
-            await self.layer12(links=links)
-        elif self.currentlayer == 12:
-            await self.layer13(links=links)
-        elif self.currentlayer == 13:
-            await self.layer14(links=links)
-        elif self.currentlayer == 14:
-            await self.layer15(links=links)
+    # handles picking the first skill from the teenage years
+    async def layer11(self):
+        # hi we're here
+        self.currentlayer = 11
 
-    # moving back moving baaaaaaaaaaaaaaaaack
-    async def prevLayer(self):
+        # makes the character for this layer
+        self.characters.append(copy.deepcopy(self.characters[4]))
+
+    # handles picking the second skill from the teenage years
+    async def layer12(self):
+        # hi we're here
+        self.currentlayer = 12
+        # makes the character for this layer
+        self.characters.append(copy.deepcopy(self.characters[5]))
+
+    # handles picking the young adult location
+    async def layer13(self):
+        # hi we're here
+        self.currentlayer = 13
+
+    # handles picking the young adult lifepath
+    async def layer14(self):
+        # hi we're here
+        self.currentlayer = 14
+
+    # handles picking an aptitude from young adulthood
+    async def layer15(self):
+        # hi we're here
+        self.currentlayer = 15
+
+        # makes the character for this layer
+        self.characters.append(copy.deepcopy(self.characters[6]))
+
+    # handles picking the first skill from young adulthood
+    async def layer16(self):
+        # hi we're here
+        self.currentlayer = 11
+
+        # makes the character for this layer
+        self.characters.append(copy.deepcopy(self.characters[7]))
+
+    # handles picking the second skill from young adulthood
+    async def layer17(self):
+        # hi we're here
+        self.currentlayer = 12
+        # makes the character for this layer
+        self.characters.append(copy.deepcopy(self.characters[8]))
+
+    # carry ooooooon carry on
+    async def nextLayer(self, selection=None):
+
+        # trappings
         if self.currentlayer == 0:
-            await self.layer0()
-        elif self.currentlayer == 1:
-            await self.layer0()
-        elif self.currentlayer == 2:
             await self.layer1()
-        elif self.currentlayer == 3:
+
+        # birth location
+        elif self.currentlayer == 1:
+            # set the location for this layer
+            if selection is None:
+                await self.thread.send("Something has gone terribly wrong, please contact us.")
+                raise Exception("Birth Lifepath Location Missing")
+            self.location.append(selection)
             await self.layer2()
-        elif self.currentlayer == 4:
+
+        # birth selection
+        elif self.currentlayer == 2:
+            # set the links for this layer
+            if selection is None:
+                await self.thread.send("Something has gone terribly wrong, please contact us.")
+                raise Exception("Birth Lifepath Links Missing")
+            self.links.append(selection)
             await self.layer3()
-        elif self.currentlayer == 5:
+
+        # child location
+        elif self.currentlayer == 3:
+            # set the location for this layer
+            if selection is None:
+                await self.thread.send("Something has gone terribly wrong, please contact us.")
+                raise Exception("Child Lifepath Location Missing")
+            self.location.append(selection)
             await self.layer4()
-        elif self.currentlayer == 6:
+
+        # child selection
+        elif self.currentlayer == 4:
+            # set the links for this layer
+            if selection is None:
+                await self.thread.send("Something has gone terribly wrong, please contact us.")
+                raise Exception("Child Lifepath Links Missing")
+            self.links.append(self.links[0] + "," + selection)
             await self.layer5()
-        elif self.currentlayer == 7:
+
+        # child aptitude
+        elif self.currentlayer == 5:
             await self.layer6()
-        elif self.currentlayer == 8:
+
+        # child skill 1
+        elif self.currentlayer == 6:
             await self.layer7()
-        elif self.currentlayer == 9:
+
+        # child skill 2
+        elif self.currentlayer == 7:
             await self.layer8()
-        elif self.currentlayer == 10:
+
+        # teen location
+        elif self.currentlayer == 8:
+            # set the location for this layer
+            if selection is None:
+                await self.thread.send("Something has gone terribly wrong, please contact us.")
+                raise Exception("Child Lifepath Location Missing")
+            self.location.append(selection)
             await self.layer9()
-        elif self.currentlayer == 11:
+
+        # teen selection
+        elif self.currentlayer == 9:
+            # set the links for this layer
+            if selection is None:
+                await self.thread.send("Something has gone terribly wrong, please contact us.")
+                raise Exception("Lifepath Links Missing")
+            self.links.append(self.links[1] + "," + selection)
             await self.layer10()
-        elif self.currentlayer == 12:
+
+        # teen aptitude
+        elif self.currentlayer == 10:
             await self.layer11()
-        elif self.currentlayer == 13:
+
+        # teen skill 1
+        elif self.currentlayer == 11:
             await self.layer12()
-        elif self.currentlayer == 14:
+
+        # teen skill 2
+        elif self.currentlayer == 12:
             await self.layer13()
+
+        # ya location
+        elif self.currentlayer == 13:
+            # set the location for this layer
+            if selection is None:
+                await self.thread.send("Something has gone terribly wrong, please contact us.")
+                raise Exception("Lifepath Location Missing")
+            self.location.append(selection)
+            await self.layer14()
+
+        # ya selection
+        elif self.currentlayer == 14:
+            # set the links for this layer
+            if selection is None:
+                await self.thread.send("Something has gone terribly wrong, please contact us.")
+                raise Exception("Lifepath Links Missing")
+            self.links.append(self.links[2] + "," + selection)
+            await self.layer15()
+
+        # ya aptitude
+        elif self.currentlayer == 15:
+            await self.layer16()
+
+        # ya skill 1
+        elif self.currentlayer == 16:
+            await self.layer17()
+
+        # ya skill 2
+        elif self.currentlayer == 17:
+            await self.layer18()
+
+    # as if nothing really matters
+    async def prevLayer(self):
+        # trappings
+        if self.currentlayer == 0:
+            self.characters.pop()
+            await self.layer0()
+        # birth location
+        elif self.currentlayer == 1:
+            self.characters.pop()
+            await self.layer0()
+        # birth selection
+        elif self.currentlayer == 2:
+            self.location.pop()
+            await self.layer1()
+        # child location
+        elif self.currentlayer == 3:
+            self.links.pop()
+            await self.layer2()
+        # child selection
+        elif self.currentlayer == 4:
+            self.location.pop()
+            await self.layer3()
+        # child aptitude
+        elif self.currentlayer == 5:
+            self.links.pop()
+            await self.layer4()
+        # child skill 1
+        elif self.currentlayer == 6:
+            self.characters.pop()
+            await self.layer5()
+        # child skill 2
+        elif self.currentlayer == 7:
+            self.characters.pop()
+            await self.layer6()
+        # teen location
+        elif self.currentlayer == 8:
+            self.characters.pop()
+            await self.layer7()
+        # teen selection
+        elif self.currentlayer == 9:
+            self.location.pop()
+            await self.layer8()
+        # teen aptitude
+        elif self.currentlayer == 10:
+            self.links.pop()
+            await self.layer9()
+        # teen skill 1
+        elif self.currentlayer == 11:
+            self.characters.pop()
+            await self.layer10()
+        # teen skill 2
+        elif self.currentlayer == 12:
+            self.characters.pop()
+            await self.layer11()
+        # ya location
+        elif self.currentlayer == 13:
+            self.characters.pop()
+            await self.layer12()
+        # ya selection
+        elif self.currentlayer == 14:
+            self.location.pop()
+            await self.layer13()
+        # ya aptitude
+        elif self.currentlayer == 15:
+            self.links.pop()
+            await self.layer14()
+        # ya skill 1
+        elif self.currentlayer == 16:
+            self.characters.pop()
+            await self.layer15()
+        # ya skill 2
+        elif self.currentlayer == 17:
+            self.characters.pop()
+            await self.layer16()
 
     def getLayer(self):
         return self.currentlayer
@@ -263,7 +442,7 @@ class Chargen:
 class selectLifepath(discord.ui.Select):
 
     # constructor needs the chargen to pass onto its buttons, the list of lifepaths, the position of the currently displayed lifepath to be removed from the list, and the placeholder text
-    def __init__(self, chargen, lifepaths, position='', placeholder=''):
+    def __init__(self, chargen, lifepaths, position=None, placeholder=''):
         self.chargen = chargen
         self.lifepaths = lifepaths
         self.position = position
@@ -278,17 +457,18 @@ class selectLifepath(discord.ui.Select):
 
     # once the user picks an option the embed is updated to display what they chose and a new drop-down list is generated
     async def callback(self, interaction: discord.Interaction):
-        # get the index of the pressed option
+        # get the index of the selected option
         self.position = int(self.values[0])
 
         # make the new embed
-        embed = await makeembedlifepaths(self.lifepaths[self.position][0], self.lifepaths[self.position][17],
+        embed = await makeembedlifepaths(title=self.lifepaths[self.position][0],
+                                         description=self.lifepaths[self.position][17],
                                          aptitudes=None, skills=None, chargen=self.chargen)
         # make the new drop-down list
         select = selectLifepath(chargen=self.chargen, lifepaths=self.lifepaths, position=self.position,
                                 placeholder=self.placeholder)
         # make the view with the two buttons
-        view = ButtonView(select=select, chargen=self.chargen, links=self.lifepaths[self.position][1])
+        view = ButtonView(select=select, chargen=self.chargen, selection=self.lifepaths[self.position][1])
         # ship it
         await interaction.message.edit(embed=embed, view=view)
         try:
@@ -308,10 +488,11 @@ async def makeembedlifepaths(title, description, aptitudes, skills, chargen):
             embed.set_footer(
                 text="Use the red undo button to go back, or the green tick button to confirm your choice.")
         else:
-            embed.set_footer("Use the green tick button to confirm your choice.")
+            embed.set_footer(text="Use the green tick button to confirm your choice.")
 
     else:
-        embed.set_footer(text="Browse through the lifepaths using the drop-down list and confirm your selection using the green tick button.")
+        embed.set_footer(
+            text="Browse through the lifepaths using the drop-down list and confirm your selection using the green tick button.")
 
     return embed
 
@@ -319,12 +500,12 @@ async def makeembedlifepaths(title, description, aptitudes, skills, chargen):
 # makes a view with buttons and stuff
 class ButtonView(discord.ui.View):
 
-    def __init__(self, *, timeout=180, select, chargen, links=None):
+    def __init__(self, *, timeout=180, select, chargen, selection=None):
         super().__init__(timeout=timeout)
         self.add_item(select)
-        if links is not None:
+        if selection is not None:
             self.add_item(
-                okButton(chargen=chargen, links=links))
+                okButton(chargen=chargen, selection=selection))
 
         if chargen.getLayer() > 0:
             self.add_item(
@@ -334,16 +515,16 @@ class ButtonView(discord.ui.View):
 # button to progress the lifepath selection
 class okButton(discord.ui.Button):
 
-    # we need the chargen to take us to the next step and also prob smth else in the future so yea, that
-    def __init__(self, chargen, links):
+    # we need the chargen to take us to the next step and links
+    def __init__(self, chargen, selection):
         self.chargen = chargen
-        self.links = links
+        self.selection = selection
         super().__init__(emoji=discord.PartialEmoji.from_str("✅"), style=discord.ButtonStyle.green)
 
     # when pressed, the chargen takes over
     async def callback(self, interaction: discord.Interaction):
         await interaction.message.delete()
-        await self.chargen.nextLayer(links=self.links)
+        await self.chargen.nextLayer(selection=self.selection)
         return
 
 
