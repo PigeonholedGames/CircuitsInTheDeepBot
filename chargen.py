@@ -1,6 +1,4 @@
 import asyncio
-import copy
-
 import discord
 import db
 import character
@@ -11,20 +9,19 @@ async def begin(thread, author):
     # pings the player otherwise they won't be added to the thread
     await thread.send(f"Hi {author.mention}, we'll make a character here.")
     await asyncio.sleep(2.00)
-
     # explanation messages
     await thread.send("Character creation in Circuits in the Deep uses a lifepath system.")
     await asyncio.sleep(0.95)
     await thread.send(
         "This means that we'll go through the broad strokes of your backstory and you'll decide what you were doing during each stage of your life.")
-    await asyncio.sleep(2.05)
+    await asyncio.sleep(0.95)
     await thread.send("Your choices will grant you some stats and unlock different lifepaths later down the line.")
-    await asyncio.sleep(1.05)
+    await asyncio.sleep(0.95)
     await thread.send(
         "But first you'll pick your trappings, which describe the role you'll end up filling within the crew.")
-    await asyncio.sleep(1.45)
+    await asyncio.sleep(0.95)
     await thread.send("Without further ado:")
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(0.95)
     # begin!
     gen = Chargen(thread, author)
     await gen.layer0()
@@ -38,29 +35,47 @@ class Chargen:
         self.characters = []
         self.location = []
         self.links = []
+        self.messages = []
+        self.lifepaths = []
 
         # and some simple global ones
         self.thread = thread
         self.author = author
         self.currentlayer = None
+        self.locations = db.queryLocations()
+        if len(self.locations) == 0:
+            self.thread.send("Something has gone terribly wrong, please contact us.")
+            raise Exception("Locations query empty.")
 
     # handles picking trappings
     async def layer0(self):
         self.currentlayer = 0
-        self.characters.append(character.Character(aptitudenames=db.queryAptitudeNames(),
-                                                   skillnames=db.querySkillNames(), server=self.thread.guild,
-                                                   thread=self.thread, player=self.author))
+        self.characters.append(character.Character(server=self.thread.guild, thread=self.thread, player=self.author))
         await self.nextLayer("")
 
     # handles picking a birth location
     async def layer1(self):
+        # hi we're here
         self.currentlayer = 1
-        await self.nextLayer("NEWATLANTIS")
+
+        # make the initial embed
+        embed = discord.Embed(title='Birth',
+                              description='OTHER LOCATIONS UNDER CONSTRUCTION :pensive:',
+                              color=0x288830)
+        embed.set_footer(text="Browse through the available locations using the drop-down list.")
+
+        # then the drop-down menu
+        select = selectLocation(chargen=self, locations=self.locations, placeholder='Where were you born?')
+
+        # then the view which will house the drop-down list and the navigation buttons
+        view = ButtonView(select=select, chargen=self)
+
+        # GO! Message, I choose you!
+        await self.thread.send(embed=embed, view=view)
 
     # handles picking a birth lifepath
     async def layer2(self):
-
-        # set the layer
+        # hi we're here
         self.currentlayer = 2
 
         # first we get all the lifepaths for this age
@@ -71,14 +86,14 @@ class Chargen:
             await self.thread.send("Something has gone terribly wrong, please contact us.")
             raise Exception("Lifepaths query empty.")
 
-        # we make the embed to display the first lifepath
+        # we make the initial embed
         embed = discord.Embed(title='Birth',
                               description='You don\'t remember much from your first few years on Earth, so you won\'t get any stats from this choice. Instead, this will tell us a little about who your parents were.',
                               color=0x288830)
         embed.set_footer(
             text="Browse through the lifepaths using the drop-down list.")
 
-        # then the drop-down menu with all the rest
+        # then the drop-down menu
         select = selectLifepath(chargen=self, lifepaths=lifepaths, placeholder='Who were you born to?')
 
         # then the view that will house the drop-down list and the navigation buttons
@@ -91,7 +106,22 @@ class Chargen:
     async def layer3(self):
         # hi we're here
         self.currentlayer = 3
-        await self.nextLayer("NEWATLANTIS")
+
+        # make the initial embed
+        embed = discord.Embed(title='Childhood',
+                              description='OTHER LOCATIONS UNDER CONSTRUCTION :pensive:',
+                              color=0x288830)
+        embed.set_footer(text="Browse through the available locations using the drop-down list.")
+
+        # then the drop-down menu
+        select = selectLocation(chargen=self, locations=self.locations,
+                                placeholder='Where were you during your childhood?')
+
+        # then the view which will house the drop-down list and the navigation buttons
+        view = ButtonView(select=select, chargen=self)
+
+        # GO! Message, I choose you!
+        await self.thread.send(embed=embed, view=view)
 
     # handles picking a childhood lifepath
     async def layer4(self):
@@ -106,14 +136,14 @@ class Chargen:
             await self.thread.send("Something has gone terribly wrong, please contact us.")
             raise Exception("Lifepaths query empty.")
 
-        # we make the embed to display the first lifepath
+        # we make the embed
         embed = discord.Embed(title='Childhood',
                               description='You can trace your affinity for certain skills all the way back here.',
                               color=0x288830)
         embed.set_footer(
-            text="Browse through the lifepaths using the drop-down list.")
+            text='Browse through the lifepaths using the drop-down list.')
 
-        # then the drop-down menu with all the rest
+        # then the drop-down list
         select = selectLifepath(chargen=self, lifepaths=lifepaths,
                                 placeholder='What is a core memory from your childhood?')
 
@@ -127,9 +157,36 @@ class Chargen:
     async def layer5(self):
         # hi we're here
         self.currentlayer = 5
-        self.characters.append(copy.deepcopy(self.characters[0]))
 
-        await self.nextLayer()
+        # make the character for this layer
+        self.characters.append(character.Character(aptitudes=self.characters[0].aptitudes,
+                                                   skills=self.characters[0].skills,
+                                                   server=self.characters[0].server, thread=self.characters[0].thread,
+                                                   player=self.characters[0].player, name=self.characters[0].name,
+                                                   stuff=self.characters[0].stuff, traits=self.characters[0].traits,
+                                                   luck=self.characters[0].luck,
+                                                   realization=self.characters[0].realization,
+                                                   harm1=self.characters[0].harm1,
+                                                   harm1clock=self.characters[0].harm1clock,
+                                                   harm2=self.characters[0].harm2,
+                                                   harm2clock=self.characters[0].harm2clock,
+                                                   harm3=self.characters[0].harm3,
+                                                   harm3clock=self.characters[0].harm3clock))
+
+        # make the embed
+        embed = discord.Embed(title='Childhood',
+                              description='Which Aptitude did you develop throughout your childhood?',
+                              color=0x288830)
+        embed.set_footer(text='Browse through your options using the drop-down list.')
+
+        # then the drop-down list
+        select = selectAptitude(chargen=self, lifepath=self.lifepaths[len(self.lifepaths)-1], placeholder='You get to pick only one of these.')
+
+        # then the view that will house the drop-down list and the navigation buttons
+        view = ButtonView(select=select, chargen=self)
+
+        # go! be free my lil message! be displayed!
+        await self.thread.send(embed=embed, view=view)
 
     # handles picking the first skill from childhood
     async def layer6(self):
@@ -137,7 +194,19 @@ class Chargen:
         self.currentlayer = 6
 
         # makes the character for this layer
-        self.characters.append(copy.deepcopy(self.characters[1]))
+        self.characters.append(character.Character(aptitudes=self.characters[1].aptitudes,
+                                                   skills=self.characters[1].skills,
+                                                   server=self.characters[1].server, thread=self.characters[1].thread,
+                                                   player=self.characters[1].player, name=self.characters[1].name,
+                                                   stuff=self.characters[1].stuff, traits=self.characters[1].traits,
+                                                   luck=self.characters[1].luck,
+                                                   realization=self.characters[1].realization,
+                                                   harm1=self.characters[1].harm1,
+                                                   harm1clock=self.characters[1].harm1clock,
+                                                   harm2=self.characters[1].harm2,
+                                                   harm2clock=self.characters[1].harm2clock,
+                                                   harm3=self.characters[1].harm3,
+                                                   harm3clock=self.characters[1].harm3clock))
 
         await self.nextLayer()
 
@@ -147,7 +216,19 @@ class Chargen:
         self.currentlayer = 7
 
         # makes the character for this layer
-        self.characters.append(copy.deepcopy(self.characters[2]))
+        self.characters.append(character.Character(aptitudes=self.characters[2].aptitudes,
+                                                   skills=self.characters[2].skills,
+                                                   server=self.characters[2].server, thread=self.characters[2].thread,
+                                                   player=self.characters[2].player, name=self.characters[2].name,
+                                                   stuff=self.characters[2].stuff, traits=self.characters[2].traits,
+                                                   luck=self.characters[2].luck,
+                                                   realization=self.characters[2].realization,
+                                                   harm1=self.characters[2].harm1,
+                                                   harm1clock=self.characters[2].harm1clock,
+                                                   harm2=self.characters[2].harm2,
+                                                   harm2clock=self.characters[2].harm2clock,
+                                                   harm3=self.characters[2].harm3,
+                                                   harm3clock=self.characters[2].harm3clock))
 
         await self.nextLayer()
 
@@ -156,7 +237,21 @@ class Chargen:
         # hi we're here
         self.currentlayer = 8
 
-        await self.nextLayer("NEWATLANTIS")
+        # make the initial embed
+        embed = discord.Embed(title='Teenage Years',
+                              description='OTHER LOCATIONS UNDER CONSTRUCTION :pensive:',
+                              color=0x288830)
+        embed.set_footer(text="Browse through the available locations using the drop-down list.")
+
+        # then the drop-down menu
+        select = selectLocation(chargen=self, locations=self.locations,
+                                placeholder='Where were you during your teenage years?')
+
+        # then the view which will house the drop-down list and the navigation buttons
+        view = ButtonView(select=select, chargen=self)
+
+        # GO! Message, I choose you!
+        await self.thread.send(embed=embed, view=view)
 
     # handles picking a teen lifepath
     async def layer9(self):
@@ -194,7 +289,33 @@ class Chargen:
         self.currentlayer = 10
 
         # makes the character for this layer
-        self.characters.append(copy.deepcopy(self.characters[3]))
+        self.characters.append(character.Character(aptitudes=self.characters[3].aptitudes,
+                                                   skills=self.characters[3].skills,
+                                                   server=self.characters[3].server, thread=self.characters[3].thread,
+                                                   player=self.characters[3].player, name=self.characters[3].name,
+                                                   stuff=self.characters[3].stuff, traits=self.characters[3].traits,
+                                                   luck=self.characters[3].luck,
+                                                   realization=self.characters[3].realization,
+                                                   harm1=self.characters[3].harm1,
+                                                   harm1clock=self.characters[3].harm1clock,
+                                                   harm2=self.characters[3].harm2,
+                                                   harm2clock=self.characters[3].harm2clock,
+                                                   harm3=self.characters[3].harm3,
+                                                   harm3clock=self.characters[3].harm3clock))
+        # make the embed
+        embed = discord.Embed(title='Teenage Years',
+                              description='What Aptitude made you stand out as a teen?',
+                              color=0x288830)
+        embed.set_footer(text='Browse through your options using the drop-down list.')
+
+        # then the drop-down list
+        select = selectAptitude(chargen=self, lifepath=self.lifepaths[len(self.lifepaths)-1], placeholder='You get to pick only one of these.')
+
+        # then the view that will house the drop-down list and the navigation buttons
+        view = ButtonView(select=select, chargen=self)
+
+        # go! be free my lil message! be displayed!
+        await self.thread.send(embed=embed, view=view)
 
     # handles picking the first skill from the teenage years
     async def layer11(self):
@@ -202,14 +323,38 @@ class Chargen:
         self.currentlayer = 11
 
         # makes the character for this layer
-        self.characters.append(copy.deepcopy(self.characters[4]))
+        self.characters.append(character.Character(aptitudes=self.characters[4].aptitudes,
+                                                   skills=self.characters[4].skills,
+                                                   server=self.characters[4].server, thread=self.characters[4].thread,
+                                                   player=self.characters[4].player, name=self.characters[4].name,
+                                                   stuff=self.characters[4].stuff, traits=self.characters[4].traits,
+                                                   luck=self.characters[4].luck,
+                                                   realization=self.characters[4].realization,
+                                                   harm1=self.characters[4].harm1,
+                                                   harm1clock=self.characters[4].harm1clock,
+                                                   harm2=self.characters[4].harm2,
+                                                   harm2clock=self.characters[4].harm2clock,
+                                                   harm3=self.characters[4].harm3,
+                                                   harm3clock=self.characters[4].harm3clock))
 
     # handles picking the second skill from the teenage years
     async def layer12(self):
         # hi we're here
         self.currentlayer = 12
         # makes the character for this layer
-        self.characters.append(copy.deepcopy(self.characters[5]))
+        self.characters.append(character.Character(aptitudes=self.characters[5].aptitudes,
+                                                   skills=self.characters[5].skills,
+                                                   server=self.characters[5].server, thread=self.characters[5].thread,
+                                                   player=self.characters[5].player, name=self.characters[5].name,
+                                                   stuff=self.characters[5].stuff, traits=self.characters[5].traits,
+                                                   luck=self.characters[5].luck,
+                                                   realization=self.characters[5].realization,
+                                                   harm1=self.characters[5].harm1,
+                                                   harm1clock=self.characters[5].harm1clock,
+                                                   harm2=self.characters[5].harm2,
+                                                   harm2clock=self.characters[5].harm2clock,
+                                                   harm3=self.characters[5].harm3,
+                                                   harm3clock=self.characters[5].harm3clock))
 
     # handles picking the young adult location
     async def layer13(self):
@@ -227,7 +372,34 @@ class Chargen:
         self.currentlayer = 15
 
         # makes the character for this layer
-        self.characters.append(copy.deepcopy(self.characters[6]))
+        self.characters.append(character.Character(aptitudes=self.characters[6].aptitudes,
+                                                   skills=self.characters[6].skills,
+                                                   server=self.characters[6].server, thread=self.characters[6].thread,
+                                                   player=self.characters[6].player, name=self.characters[6].name,
+                                                   stuff=self.characters[6].stuff, traits=self.characters[6].traits,
+                                                   luck=self.characters[6].luck,
+                                                   realization=self.characters[6].realization,
+                                                   harm1=self.characters[6].harm1,
+                                                   harm1clock=self.characters[6].harm1clock,
+                                                   harm2=self.characters[6].harm2,
+                                                   harm2clock=self.characters[6].harm2clock,
+                                                   harm3=self.characters[6].harm3,
+                                                   harm3clock=self.characters[6].harm3clock))
+
+        # make the embed
+        embed = discord.Embed(title='Childhood',
+                              description='Which Aptitude did you develop throughout your childhood?',
+                              color=0x288830)
+        embed.set_footer(text='Browse through your options using the drop-down list.')
+
+        # then the drop-down list
+        select = selectAptitude(chargen=self, lifepath=self.lifepaths[len(self.lifepaths)-1], placeholder='You get to pick only one of these.')
+
+        # then the view that will house the drop-down list and the navigation buttons
+        view = ButtonView(select=select, chargen=self)
+
+        # go! be free my lil message! be displayed!
+        await self.thread.send(embed=embed, view=view)
 
     # handles picking the first skill from young adulthood
     async def layer16(self):
@@ -235,17 +407,41 @@ class Chargen:
         self.currentlayer = 11
 
         # makes the character for this layer
-        self.characters.append(copy.deepcopy(self.characters[7]))
+        self.characters.append(character.Character(aptitudes=self.characters[7].aptitudes,
+                                                   skills=self.characters[7].skills,
+                                                   server=self.characters[7].server, thread=self.characters[7].thread,
+                                                   player=self.characters[7].player, name=self.characters[7].name,
+                                                   stuff=self.characters[7].stuff, traits=self.characters[7].traits,
+                                                   luck=self.characters[7].luck,
+                                                   realization=self.characters[7].realization,
+                                                   harm1=self.characters[7].harm1,
+                                                   harm1clock=self.characters[7].harm1clock,
+                                                   harm2=self.characters[7].harm2,
+                                                   harm2clock=self.characters[7].harm2clock,
+                                                   harm3=self.characters[7].harm3,
+                                                   harm3clock=self.characters[7].harm3clock))
 
     # handles picking the second skill from young adulthood
     async def layer17(self):
         # hi we're here
         self.currentlayer = 12
         # makes the character for this layer
-        self.characters.append(copy.deepcopy(self.characters[8]))
+        self.characters.append(character.Character(aptitudes=self.characters[8].aptitudes,
+                                                   skills=self.characters[8].skills,
+                                                   server=self.characters[8].server, thread=self.characters[8].thread,
+                                                   player=self.characters[8].player, name=self.characters[8].name,
+                                                   stuff=self.characters[8].stuff, traits=self.characters[8].traits,
+                                                   luck=self.characters[8].luck,
+                                                   realization=self.characters[8].realization,
+                                                   harm1=self.characters[8].harm1,
+                                                   harm1clock=self.characters[8].harm1clock,
+                                                   harm2=self.characters[8].harm2,
+                                                   harm2clock=self.characters[8].harm2clock,
+                                                   harm3=self.characters[8].harm3,
+                                                   harm3clock=self.characters[8].harm3clock))
 
     # carry ooooooon carry on
-    async def nextLayer(self, selection=None):
+    async def nextLayer(self, selection=None, selection1=None):
 
         # trappings
         if self.currentlayer == 0:
@@ -266,7 +462,7 @@ class Chargen:
             if selection is None:
                 await self.thread.send("Something has gone terribly wrong, please contact us.")
                 raise Exception("Birth Lifepath Links Missing")
-            self.links.append(selection)
+            self.links.append(selection[1])
             await self.layer3()
 
         # child location
@@ -281,14 +477,18 @@ class Chargen:
         # child selection
         elif self.currentlayer == 4:
             # set the links for this layer
-            if selection is None:
+            if selection is None :
                 await self.thread.send("Something has gone terribly wrong, please contact us.")
                 raise Exception("Child Lifepath Links Missing")
-            self.links.append(self.links[0] + "," + selection)
+            self.lifepaths.append(selection)
+            self.links.append(self.links[0] + "," + selection[1])
             await self.layer5()
 
         # child aptitude
         elif self.currentlayer == 5:
+            # lock in the aptitude selection
+            chara = self.characters[0]
+            chara.incrementAptitude(name=selection1, x=1)
             await self.layer6()
 
         # child skill 1
@@ -313,8 +513,9 @@ class Chargen:
             # set the links for this layer
             if selection is None:
                 await self.thread.send("Something has gone terribly wrong, please contact us.")
-                raise Exception("Lifepath Links Missing")
-            self.links.append(self.links[1] + "," + selection)
+                raise Exception("Child Lifepath Links Missing")
+            self.lifepaths.append(selection)
+            self.links.append(self.links[1] + "," + selection[1])
             await self.layer10()
 
         # teen aptitude
@@ -343,8 +544,9 @@ class Chargen:
             # set the links for this layer
             if selection is None:
                 await self.thread.send("Something has gone terribly wrong, please contact us.")
-                raise Exception("Lifepath Links Missing")
-            self.links.append(self.links[2] + "," + selection)
+                raise Exception("Child Lifepath Links Missing")
+            self.lifepaths.append(selection)
+            self.links.append(self.links[2] + "," + selection[1])
             await self.layer15()
 
         # ya aptitude
@@ -383,6 +585,7 @@ class Chargen:
             await self.layer3()
         # child aptitude
         elif self.currentlayer == 5:
+            self.lifepaths.pop()
             self.links.pop()
             await self.layer4()
         # child skill 1
@@ -403,6 +606,7 @@ class Chargen:
             await self.layer8()
         # teen aptitude
         elif self.currentlayer == 10:
+            self.lifepaths.pop()
             self.links.pop()
             await self.layer9()
         # teen skill 1
@@ -423,6 +627,7 @@ class Chargen:
             await self.layer13()
         # ya aptitude
         elif self.currentlayer == 15:
+            self.lifepaths.pop()
             self.links.pop()
             await self.layer14()
         # ya skill 1
@@ -439,6 +644,50 @@ class Chargen:
 
 
 # this class handles displaying the drop-down list of lifepaths
+class selectLocation(discord.ui.Select):
+
+    # constructor needs the chargen to pass onto its buttons, the list of lifepaths, the position of the currently displayed lifepath to be removed from the list, and the placeholder text
+    def __init__(self, chargen, locations, position=None, placeholder=''):
+        self.chargen = chargen
+        self.locations = locations
+        self.position = position
+
+        # the options list is constructed from the lifepaths list minus the one being currently displayed
+        options = []
+        for x in range(len(locations)):
+            if x != position:
+                options.append(
+                    discord.SelectOption(label=locations[x][1], description=locations[x][2][:96] + '...', value=x,
+                                         default=False))
+
+        if not options:
+            options.append(
+                discord.SelectOption(label=locations[position][1], description=locations[position][2][:96] + '...',
+                                     value=x, default=False))
+
+        super().__init__(placeholder=placeholder, max_values=1, options=options)
+
+    # once the user picks an option the embed is updated to display what they chose and a new drop-down list is generated
+    async def callback(self, interaction: discord.Interaction):
+        # get the index of the selected option
+        self.position = int(self.values[0])
+        # make the new embed
+        embed = discord.Embed(title=self.locations[self.position][1], description=self.locations[self.position][2])
+        embed.set_footer(
+            text='Browse through the locations using the drop-down list and confirm your selection using the green tick button.')
+        # make the new drop-down list
+        select = selectLocation(chargen=self.chargen, locations=self.locations, position=self.position,
+                                placeholder=self.placeholder)
+        # make the view with the two buttons
+        view = ButtonView(select=select, chargen=self.chargen, selection=self.locations[self.position][0])
+        # ship it
+        await interaction.message.edit(embed=embed, view=view)
+        try:
+            await interaction.response.send_message(" ")
+        except:
+            pass
+
+
 class selectLifepath(discord.ui.Select):
 
     # constructor needs the chargen to pass onto its buttons, the list of lifepaths, the position of the currently displayed lifepath to be removed from the list, and the placeholder text
@@ -451,7 +700,9 @@ class selectLifepath(discord.ui.Select):
         options = []
         for x in range(len(lifepaths)):
             if x != position:
-                options.append(discord.SelectOption(label=lifepaths[x][0], value=x, default=False))
+                options.append(
+                    discord.SelectOption(label=lifepaths[x][0], description=lifepaths[x][17][:99], value=x,
+                                         default=False))
 
         super().__init__(placeholder=placeholder, max_values=1, options=options)
 
@@ -461,14 +712,20 @@ class selectLifepath(discord.ui.Select):
         self.position = int(self.values[0])
 
         # make the new embed
-        embed = await makeembedlifepaths(title=self.lifepaths[self.position][0],
-                                         description=self.lifepaths[self.position][17],
-                                         aptitudes=None, skills=None, chargen=self.chargen)
+        embed = discord.Embed(title=self.lifepaths[self.position][0],
+                              description=self.lifepaths[self.position][17][:99], color=0x288830)
+
+        if self.chargen.getLayer() > 0:
+            embed.set_footer(
+                text="Use the red undo button to go back, or the green tick button to confirm your choice.")
+        else:
+            embed.set_footer(text="Use the green tick button to confirm your choice.")
+
         # make the new drop-down list
         select = selectLifepath(chargen=self.chargen, lifepaths=self.lifepaths, position=self.position,
                                 placeholder=self.placeholder)
         # make the view with the two buttons
-        view = ButtonView(select=select, chargen=self.chargen, selection=self.lifepaths[self.position][1])
+        view = ButtonView(select=select, chargen=self.chargen, selection=self.lifepaths[self.position])
         # ship it
         await interaction.message.edit(embed=embed, view=view)
         try:
@@ -477,35 +734,61 @@ class selectLifepath(discord.ui.Select):
             pass
 
 
-# make an embed of lifepaths
-async def makeembedlifepaths(title, description, aptitudes, skills, chargen):
-    embed = discord.Embed(title=title, description=description, color=0x288830)
+class selectAptitude(discord.ui.Select):
 
-    if aptitudes is not None:
-        embed.add_field(name=" ", value=aptitudes, inline=True)
-        embed.add_field(name=" ", value=skills, inline=True)
-        if chargen.getLayer() > 0:
-            embed.set_footer(
-                text="Use the red undo button to go back, or the green tick button to confirm your choice.")
-        else:
-            embed.set_footer(text="Use the green tick button to confirm your choice.")
+    # constructor needs the chargen to pass onto its buttons, the selected lifepath, the position of the currently displayed aptitude to be removed from the list, and the placeholder text
+    def __init__(self, chargen, lifepath, position=None, placeholder=''):
+        self.chargen = chargen
+        self.lifepath = lifepath
+        self.position = position
 
-    else:
+        # the aptitude options
+        options = []
+        for x in range(2, 7):
+            if x != position and lifepath[x] is not None:
+                printables = db.queryAptitudePrintable(lifepath[x])
+                options.append(discord.SelectOption(label=printables[0][0], description=printables[0][1][:99], value=x,
+                                                    default=False))
+        if options == []:
+            printables = db.queryAptitudePrintable(lifepath[self.position])
+            options.append(
+                discord.SelectOption(label=printables[0][0], description=printables[0][1][:99], value=x, default=False))
+
+        super().__init__(placeholder=placeholder, max_values=1, options=options)
+
+    # once the user picks an option the embed is updated to display what they chose and a new drop-down list is generated
+    async def callback(self, interaction: discord.Interaction):
+        # get the index of the selected option
+        self.position = int(self.values[0])
+
+        # get the printables
+        printables = db.queryAptitudePrintable(self.lifepath[self.position])
+        # make the new embed
+        embed = discord.Embed(title=printables[0][0], description=printables[0][1][:99], color=0x288830)
         embed.set_footer(
-            text="Browse through the lifepaths using the drop-down list and confirm your selection using the green tick button.")
-
-    return embed
+            text='Browse through the Aptitudes using the drop-down list and confirm your selection using the green tick button.')
+        # make the new drop-down list
+        select = selectAptitude(chargen=self.chargen, lifepath=self.lifepath, position=self.position,
+                                placeholder=self.placeholder)
+        # make the view with the two buttons
+        view = ButtonView(select=select, chargen=self.chargen, selection=self.lifepath, selection1=self.lifepath[self.position])
+        # ship it
+        await interaction.message.edit(embed=embed, view=view)
+        try:
+            await interaction.response.send_message(" ")
+        except:
+            pass
 
 
 # makes a view with buttons and stuff
 class ButtonView(discord.ui.View):
 
-    def __init__(self, *, timeout=180, select, chargen, selection=None):
+    def __init__(self, *, timeout=300, select, chargen, selection=None, selection1=None):
         super().__init__(timeout=timeout)
+
         self.add_item(select)
         if selection is not None:
-            self.add_item(
-                okButton(chargen=chargen, selection=selection))
+            self.add_item(okButton(chargen=chargen, selection=selection, selection1=selection1))
 
         if chargen.getLayer() > 0:
             self.add_item(
@@ -516,15 +799,17 @@ class ButtonView(discord.ui.View):
 class okButton(discord.ui.Button):
 
     # we need the chargen to take us to the next step and links
-    def __init__(self, chargen, selection):
+    def __init__(self, chargen, selection, selection1):
         self.chargen = chargen
         self.selection = selection
+        self.selection1 = selection1
+
         super().__init__(emoji=discord.PartialEmoji.from_str("✅"), style=discord.ButtonStyle.green)
 
     # when pressed, the chargen takes over
     async def callback(self, interaction: discord.Interaction):
         await interaction.message.delete()
-        await self.chargen.nextLayer(selection=self.selection)
+        await self.chargen.nextLayer(selection=self.selection, selection1=self.selection1)
         return
 
 

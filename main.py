@@ -2,7 +2,6 @@ import asyncio
 import discord
 from discord import app_commands
 import commands
-import db
 
 
 class circbot(discord.Client):
