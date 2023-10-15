@@ -40,6 +40,11 @@ def queryAltLifepaths(location, age):
     return q.fetchall()
 
 
+def queryTrappings():
+    q = gamedata.execute("SELECT NAME,DESCRIPTION,APTITUDE,STUFF0,STUFF1,STUFF2,STUFF3,STUFF4,STUFF5 FROM TRAPPINGS")
+    return q.fetchall()
+
+
 # function to fetch the base game stats
 def queryGameData(fields, table):
     q = gamedata.execute("SELECT {} FROM {}".format(fields, table))

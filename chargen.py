@@ -13,12 +13,9 @@ async def begin(thread, author):
     await thread.send("Character creation in Circuits in the Deep uses a lifepath system.")
     await asyncio.sleep(0.95)
     await thread.send(
-        "This means that we'll go through the broad strokes of your backstory and you'll decide what you were doing during each stage of your life.")
+        "This means that we'll go through the broad strokes of your backstory and you'll decide what you were doing at each stage of your life.")
     await asyncio.sleep(0.95)
     await thread.send("Your choices will grant you some stats and unlock different lifepaths later down the line.")
-    await asyncio.sleep(0.95)
-    await thread.send(
-        "But first you'll pick your trappings, which describe the role you'll end up filling within the crew.")
     await asyncio.sleep(0.95)
     await thread.send("Without further ado:")
     await asyncio.sleep(0.95)
@@ -51,7 +48,30 @@ class Chargen:
     async def layer0(self):
         self.currentlayer = 0
         self.characters.append(character.Character(server=self.thread.guild, thread=self.thread, player=self.author))
-        await self.nextLayer("")
+
+        # first we get the trappings
+        trappings = db.queryTrappings()
+
+        # and check that we actually got them
+        if len(trappings) == 0:
+            await self.thread.send("Something has gone terribly wrong, please contact us.")
+            raise Exception("Trappings query empty.")
+
+        # we make the initial embed
+        embed = discord.Embed(title='Trappings',
+                              description='These will describe the role you\'ll end up filling within the crew, and offer you the core Aptitude and the Stuff you\'ll need to do that job.',
+                              color=0x288830)
+        embed.set_footer(
+            text="Browse through the trappings using the drop-down list.")
+
+        # then the drop-down menu
+        select = selectTrappings(chargen=self, trappings=trappings, placeholder='Who are you?')
+
+        # then the view which will house the drop-down list and the navigation buttons
+        view = ButtonView(select=select, chargen=self)
+
+        # GO! Message, I choose you!
+        await self.thread.send(embed=embed, view=view)
 
     # handles picking a birth location
     async def layer1(self):
@@ -180,7 +200,8 @@ class Chargen:
         embed.set_footer(text='Browse through your options using the drop-down list.')
 
         # then the drop-down list
-        select = selectAptitude(chargen=self, lifepath=self.lifepaths[len(self.lifepaths)-1], placeholder='You get to pick only one of these.')
+        select = selectAptitude(chargen=self, lifepath=self.lifepaths[len(self.lifepaths) - 1],
+                                placeholder='You get to pick only one of these.')
 
         # then the view that will house the drop-down list and the navigation buttons
         view = ButtonView(select=select, chargen=self)
@@ -309,7 +330,8 @@ class Chargen:
         embed.set_footer(text='Browse through your options using the drop-down list.')
 
         # then the drop-down list
-        select = selectAptitude(chargen=self, lifepath=self.lifepaths[len(self.lifepaths)-1], placeholder='You get to pick only one of these.')
+        select = selectAptitude(chargen=self, lifepath=self.lifepaths[len(self.lifepaths) - 1],
+                                placeholder='You get to pick only one of these.')
 
         # then the view that will house the drop-down list and the navigation buttons
         view = ButtonView(select=select, chargen=self)
@@ -393,7 +415,8 @@ class Chargen:
         embed.set_footer(text='Browse through your options using the drop-down list.')
 
         # then the drop-down list
-        select = selectAptitude(chargen=self, lifepath=self.lifepaths[len(self.lifepaths)-1], placeholder='You get to pick only one of these.')
+        select = selectAptitude(chargen=self, lifepath=self.lifepaths[len(self.lifepaths) - 1],
+                                placeholder='You get to pick only one of these.')
 
         # then the view that will house the drop-down list and the navigation buttons
         view = ButtonView(select=select, chargen=self)
@@ -477,7 +500,7 @@ class Chargen:
         # child selection
         elif self.currentlayer == 4:
             # set the links for this layer
-            if selection is None :
+            if selection is None:
                 await self.thread.send("Something has gone terribly wrong, please contact us.")
                 raise Exception("Child Lifepath Links Missing")
             self.lifepaths.append(selection)
@@ -644,6 +667,52 @@ class Chargen:
 
 
 # this class handles displaying the drop-down list of lifepaths
+class selectTrappings(discord.ui.Select):
+
+    # constructor needs the chargen to pass onto its buttons, the list of lifepaths, the position of the currently displayed lifepath to be removed from the list, and the placeholder text
+    def __init__(self, chargen, trappings, position=None, placeholder=''):
+        self.chargen = chargen
+        self.trappings = trappings
+        self.position = position
+
+        # the options list is constructed from the lifepaths list minus the one being currently displayed
+        options = []
+        for x in range(len(trappings)):
+            if x != position:
+                options.append(
+                    discord.SelectOption(label=trappings[x][0].capitalize(), description=trappings[x][1][:99], value=x,
+                                         default=False))
+
+        if not options:
+            options.append(
+                discord.SelectOption(label=trappings[position][0].capitalize(), description=trappings[position][1][:99],
+                                     value=x, default=False))
+
+        super().__init__(placeholder=placeholder, max_values=1, options=options)
+
+    # once the user picks an option the embed is updated to display what they chose and a new drop-down list is generated
+    async def callback(self, interaction: discord.Interaction):
+        # get the index of the selected option
+        self.position = int(self.values[0])
+        # make the new embed
+        embed = discord.Embed(title=self.trappings[self.position][0].capitalize(),
+                              description=self.trappings[self.position][1] + '\n You\'ll be in your element when you can {} your way out of trouble'.format(self.trappings[self.position][2].capitalize()))
+        embed.set_footer(
+            text='Browse through the trappings using the drop-down list and confirm your selection using the green tick button.')
+        # make the new drop-down list
+        select = selectTrappings(chargen=self.chargen, trappings=self.trappings, position=self.position,
+                                 placeholder=self.placeholder)
+        # make the view with the two buttons
+        view = ButtonView(select=select, chargen=self.chargen, selection=self.trappings[self.position][0])
+        # ship it
+        await interaction.message.edit(embed=embed, view=view)
+        try:
+            await interaction.response.send_message(" ")
+        except:
+            pass
+
+
+# this class handles displaying the drop-down list of lifepaths
 class selectLocation(discord.ui.Select):
 
     # constructor needs the chargen to pass onto its buttons, the list of lifepaths, the position of the currently displayed lifepath to be removed from the list, and the placeholder text
@@ -657,12 +726,12 @@ class selectLocation(discord.ui.Select):
         for x in range(len(locations)):
             if x != position:
                 options.append(
-                    discord.SelectOption(label=locations[x][1], description=locations[x][2][:96] + '...', value=x,
+                    discord.SelectOption(label=locations[x][1], description=locations[x][2][:99], value=x,
                                          default=False))
 
         if not options:
             options.append(
-                discord.SelectOption(label=locations[position][1], description=locations[position][2][:96] + '...',
+                discord.SelectOption(label=locations[position][1], description=locations[position][2][:99],
                                      value=x, default=False))
 
         super().__init__(placeholder=placeholder, max_values=1, options=options)
@@ -771,7 +840,8 @@ class selectAptitude(discord.ui.Select):
         select = selectAptitude(chargen=self.chargen, lifepath=self.lifepath, position=self.position,
                                 placeholder=self.placeholder)
         # make the view with the two buttons
-        view = ButtonView(select=select, chargen=self.chargen, selection=self.lifepath, selection1=self.lifepath[self.position])
+        view = ButtonView(select=select, chargen=self.chargen, selection=self.lifepath,
+                          selection1=self.lifepath[self.position])
         # ship it
         await interaction.message.edit(embed=embed, view=view)
         try:
