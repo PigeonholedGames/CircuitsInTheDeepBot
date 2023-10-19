@@ -175,3 +175,6 @@ class Character:
         for y in self.skills:
             if name in self.skills.keys():
                 y[name] = x[name] + x
+
+    def addStuff(self, thing):
+        self.stuff.append(thing)

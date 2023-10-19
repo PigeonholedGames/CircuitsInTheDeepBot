@@ -93,6 +93,32 @@ class Chargen:
         # GO! Message, I choose you!
         await self.thread.send(embed=embed, view=view)
 
+    # handles picking a trapping aptitude in case that's necessary
+    async def layerMinus1(self):
+
+        # hi we're here
+        self.currentlayer = -1
+
+        # make the embed
+        embed = discord.Embed(title='Trappings',
+                              description='You\'ve picked Trappings that offer an Aptitude selection.',
+                              color=0x288830)
+        embed.set_footer(text='Browse through your options using the drop-down list.')
+
+        # then the drop-down list
+        aptitudenamestemp = db.queryAptitudeNames()
+        aptitudenames = []
+        for n in aptitudenamestemp:
+            aptitudenames.append(n[0])
+        select = selectAptitude(chargen=self, aptitudes=aptitudenames,
+                                placeholder='You get to pick only one of these.')
+
+        # then the view that will house the drop-down list and the navigation buttons
+        view = ButtonView(select=select, chargen=self)
+
+        # go! be free my lil message! be displayed!
+        await self.thread.send(embed=embed, view=view)
+
     # handles picking a birth lifepath
     async def layer2(self):
         # hi we're here
@@ -200,7 +226,11 @@ class Chargen:
         embed.set_footer(text='Browse through your options using the drop-down list.')
 
         # then the drop-down list
-        select = selectAptitude(chargen=self, lifepath=self.lifepaths[len(self.lifepaths) - 1],
+        aptitudes = []
+        for x in range(2, 7):
+            if self.lifepaths[len(self.lifepaths) - 1][x] is not None:
+                aptitudes.append(self.lifepaths[len(self.lifepaths) - 1][x])
+        select = selectAptitude(chargen=self, aptitudes=aptitudes,
                                 placeholder='You get to pick only one of these.')
 
         # then the view that will house the drop-down list and the navigation buttons
@@ -330,7 +360,11 @@ class Chargen:
         embed.set_footer(text='Browse through your options using the drop-down list.')
 
         # then the drop-down list
-        select = selectAptitude(chargen=self, lifepath=self.lifepaths[len(self.lifepaths) - 1],
+        aptitudes = []
+        for x in range(2, 7):
+            if self.lifepaths[len(self.lifepaths) - 1][x] is not None:
+                aptitudes.append(self.lifepaths[len(self.lifepaths) - 1][x])
+        select = selectAptitude(chargen=self, aptitudes=aptitudes,
                                 placeholder='You get to pick only one of these.')
 
         # then the view that will house the drop-down list and the navigation buttons
@@ -415,7 +449,11 @@ class Chargen:
         embed.set_footer(text='Browse through your options using the drop-down list.')
 
         # then the drop-down list
-        select = selectAptitude(chargen=self, lifepath=self.lifepaths[len(self.lifepaths) - 1],
+        aptitudes = []
+        for x in range(2, 7):
+            if self.lifepaths[len(self.lifepaths) - 1][x] is not None:
+                aptitudes.append(self.lifepaths[len(self.lifepaths) - 1][x])
+        select = selectAptitude(chargen=self, aptitudes=aptitudes,
                                 placeholder='You get to pick only one of these.')
 
         # then the view that will house the drop-down list and the navigation buttons
@@ -468,6 +506,26 @@ class Chargen:
 
         # trappings
         if self.currentlayer == 0:
+            if selection is None:
+                await self.thread.send("Something has gone terribly wrong, please contact us.")
+                raise Exception("Trappings Missing")
+
+            for x in range(3, 9):
+                if selection[x] is not None:
+                    self.characters[len(self.characters) - 1].addStuff(selection[x])
+
+            if selection[2] is not None:
+                self.characters[len(self.characters) - 1].incrementAptitude(name=selection[2], x=1)
+                await self.layer1()
+            else:
+                await self.layerMinus1()
+
+        # optional trappings aptitude selection
+        elif self.currentlayer == -1:
+            if selection is None:
+                await self.thread.send("Something has gone terribly wrong, please contact us.")
+                raise Exception("Trappings Aptitude Selection Missing")
+            self.characters[len(self.characters)-1].incrementAptitude(name=selection, x=1)
             await self.layer1()
 
         # birth location
@@ -510,8 +568,7 @@ class Chargen:
         # child aptitude
         elif self.currentlayer == 5:
             # lock in the aptitude selection
-            chara = self.characters[0]
-            chara.incrementAptitude(name=selection1, x=1)
+            self.characters[len(self.characters)-1].incrementAptitude(name=selection, x=1)
             await self.layer6()
 
         # child skill 1
@@ -588,6 +645,10 @@ class Chargen:
     async def prevLayer(self):
         # trappings
         if self.currentlayer == 0:
+            self.characters.pop()
+            await self.layer0()
+        # optional trappings aptitude selection
+        if self.currentlayer == -1:
             self.characters.pop()
             await self.layer0()
         # birth location
@@ -695,15 +756,22 @@ class selectTrappings(discord.ui.Select):
         # get the index of the selected option
         self.position = int(self.values[0])
         # make the new embed
-        embed = discord.Embed(title=self.trappings[self.position][0].capitalize(),
-                              description=self.trappings[self.position][1] + '\n You\'ll be in your element when you can {} your way out of trouble'.format(self.trappings[self.position][2].capitalize()))
+        if self.trappings[self.position][2] is not None:
+            embed = discord.Embed(title=self.trappings[self.position][0].capitalize(),
+                                  description=self.trappings[self.position][
+                                                  1] + '\n You\'ll be in your element when you can {} your way out of trouble'.format(
+                                      self.trappings[self.position][2].capitalize()))
+        else:
+            embed = discord.Embed(title=self.trappings[self.position][0].capitalize(),
+                                  description=self.trappings[self.position][
+                                                  1] + '\n You\'ll get an additional choice for the Aptitude you make use of the most')
         embed.set_footer(
             text='Browse through the trappings using the drop-down list and confirm your selection using the green tick button.')
         # make the new drop-down list
         select = selectTrappings(chargen=self.chargen, trappings=self.trappings, position=self.position,
                                  placeholder=self.placeholder)
         # make the view with the two buttons
-        view = ButtonView(select=select, chargen=self.chargen, selection=self.trappings[self.position][0])
+        view = ButtonView(select=select, chargen=self.chargen, selection=self.trappings[self.position])
         # ship it
         await interaction.message.edit(embed=embed, view=view)
         try:
@@ -806,20 +874,20 @@ class selectLifepath(discord.ui.Select):
 class selectAptitude(discord.ui.Select):
 
     # constructor needs the chargen to pass onto its buttons, the selected lifepath, the position of the currently displayed aptitude to be removed from the list, and the placeholder text
-    def __init__(self, chargen, lifepath, position=None, placeholder=''):
+    def __init__(self, chargen, aptitudes, position=None, placeholder=''):
         self.chargen = chargen
-        self.lifepath = lifepath
+        self.aptitudes = aptitudes
         self.position = position
 
         # the aptitude options
         options = []
-        for x in range(2, 7):
-            if x != position and lifepath[x] is not None:
-                printables = db.queryAptitudePrintable(lifepath[x])
+        for x in range(len(aptitudes)):
+            if x != self.position:
+                printables = db.queryAptitudePrintable(aptitudes[x])
                 options.append(discord.SelectOption(label=printables[0][0], description=printables[0][1][:99], value=x,
                                                     default=False))
-        if options == []:
-            printables = db.queryAptitudePrintable(lifepath[self.position])
+        if not options:
+            printables = db.queryAptitudePrintable(aptitudes[self.position])
             options.append(
                 discord.SelectOption(label=printables[0][0], description=printables[0][1][:99], value=x, default=False))
 
@@ -831,17 +899,16 @@ class selectAptitude(discord.ui.Select):
         self.position = int(self.values[0])
 
         # get the printables
-        printables = db.queryAptitudePrintable(self.lifepath[self.position])
+        printables = db.queryAptitudePrintable(self.aptitudes[self.position])
         # make the new embed
         embed = discord.Embed(title=printables[0][0], description=printables[0][1][:99], color=0x288830)
         embed.set_footer(
             text='Browse through the Aptitudes using the drop-down list and confirm your selection using the green tick button.')
         # make the new drop-down list
-        select = selectAptitude(chargen=self.chargen, lifepath=self.lifepath, position=self.position,
+        select = selectAptitude(chargen=self.chargen, aptitudes=self.aptitudes, position=self.position,
                                 placeholder=self.placeholder)
         # make the view with the two buttons
-        view = ButtonView(select=select, chargen=self.chargen, selection=self.lifepath,
-                          selection1=self.lifepath[self.position])
+        view = ButtonView(select=select, chargen=self.chargen, selection=self.aptitudes[self.position])
         # ship it
         await interaction.message.edit(embed=embed, view=view)
         try:
