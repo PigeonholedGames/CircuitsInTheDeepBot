@@ -58,8 +58,14 @@ def queryAptitudeNames():
 
 
 # function to fetch aptitude to display
-def queryAptitudePrintable(name):
-    q = gamedata.execute("SELECT PRINTABLE,DESCRIPTION FROM APTITUDES WHERE NAME='{}'".format(name))
+def queryAptitudeToPrint(name):
+    q = gamedata.execute("SELECT NAME,DESCRIPTION FROM APTITUDES WHERE NAME='{}'".format(name))
+    return q.fetchall()
+
+
+# function to fetch aptitude to display
+def querySkillToPrint(name):
+    q = gamedata.execute("SELECT NAME,DESCRIPTION FROM SKILLS WHERE NAME='{}'".format(name))
     return q.fetchall()
 
 

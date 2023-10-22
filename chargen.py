@@ -1,4 +1,3 @@
-import asyncio
 import discord
 import db
 import character
@@ -8,17 +7,16 @@ import character
 async def begin(thread, author):
     # pings the player otherwise they won't be added to the thread
     await thread.send(f"Hi {author.mention}, we'll make a character here.")
-    await asyncio.sleep(2.00)
+    # await asyncio.sleep(2.00)
     # explanation messages
-    await thread.send("Character creation in Circuits in the Deep uses a lifepath system.")
-    await asyncio.sleep(0.95)
-    await thread.send(
-        "This means that we'll go through the broad strokes of your backstory and you'll decide what you were doing at each stage of your life.")
-    await asyncio.sleep(0.95)
-    await thread.send("Your choices will grant you some stats and unlock different lifepaths later down the line.")
-    await asyncio.sleep(0.95)
-    await thread.send("Without further ado:")
-    await asyncio.sleep(0.95)
+    # await thread.send("Character creation in Circuits in the Deep uses a lifepath system.")
+    # await asyncio.sleep(0.95)
+    # await thread.send("This means that we'll go through the broad strokes of your backstory and you'll decide what you were doing at each stage of your life.")
+    # await asyncio.sleep(0.95)
+    # await thread.send("Your choices will grant you some stats and unlock different lifepaths later down the line.")
+    # await asyncio.sleep(0.95)
+    # await thread.send("Without further ado:")
+    # await asyncio.sleep(0.95)
     # begin!
     gen = Chargen(thread, author)
     await gen.layer0()
@@ -34,6 +32,7 @@ class Chargen:
         self.links = []
         self.messages = []
         self.lifepaths = []
+        self.selectedskills = []
 
         # and some simple global ones
         self.thread = thread
@@ -228,7 +227,7 @@ class Chargen:
         # then the drop-down list
         aptitudes = []
         for x in range(2, 7):
-            if self.lifepaths[len(self.lifepaths) - 1][x] is not None:
+            if self.lifepaths[len(self.lifepaths)-1][x] is not None and self.characters[len(self.characters)-1].getAptitude(self.lifepaths[len(self.lifepaths)-1][x]) < 2:
                 aptitudes.append(self.lifepaths[len(self.lifepaths) - 1][x])
         select = selectAptitude(chargen=self, aptitudes=aptitudes,
                                 placeholder='You get to pick only one of these.')
@@ -259,7 +258,24 @@ class Chargen:
                                                    harm3=self.characters[1].harm3,
                                                    harm3clock=self.characters[1].harm3clock))
 
-        await self.nextLayer()
+        # make the embed
+        embed = discord.Embed(title='Childhood',
+                              description='You developed two Skills during your childhood. This is the first.',
+                              color=0x288830)
+        embed.set_footer(text='Browse through your options using the drop-down list.')
+
+        # then the drop-down list
+        skills = []
+        for x in range(7, 17):
+            if self.lifepaths[len(self.lifepaths) - 1][x] is not None and self.characters[len(self.characters)-1].getSkill(self.lifepaths[len(self.lifepaths)-1][x]) < 2:
+                skills.append(self.lifepaths[len(self.lifepaths) - 1][x])
+        select = selectSkill(chargen=self, skills=skills, placeholder='You get to pick two of these.')
+
+        # then the view that will house the drop-down list and the navigation buttons
+        view = ButtonView(select=select, chargen=self)
+
+        # go! be free my lil message! be displayed!
+        await self.thread.send(embed=embed, view=view)
 
     # handles picking the second skill from childhood
     async def layer7(self):
@@ -281,7 +297,24 @@ class Chargen:
                                                    harm3=self.characters[2].harm3,
                                                    harm3clock=self.characters[2].harm3clock))
 
-        await self.nextLayer()
+        # make the embed
+        embed = discord.Embed(title='Childhood',
+                              description='You developed two Skills during your childhood. This is the second.',
+                              color=0x288830)
+        embed.set_footer(text='Browse through your options using the drop-down list.')
+
+        # then the drop-down list
+        skills = []
+        for x in range(7, 17):
+            if self.lifepaths[len(self.lifepaths)-1][x] is not None and self.lifepaths[len(self.lifepaths)-1][x] is not self.selectedskills[len(self.selectedskills) - 1] and self.characters[len(self.characters) - 1].getSkill(self.lifepaths[len(self.lifepaths) - 1][x]) < 2:
+                skills.append(self.lifepaths[len(self.lifepaths) - 1][x])
+        select = selectSkill(chargen=self, skills=skills, placeholder='This is your second pick from these.')
+
+        # then the view that will house the drop-down list and the navigation buttons
+        view = ButtonView(select=select, chargen=self)
+
+        # go! be free my lil message! be displayed!
+        await self.thread.send(embed=embed, view=view)
 
     # handles picking a teen location
     async def layer8(self):
@@ -362,7 +395,7 @@ class Chargen:
         # then the drop-down list
         aptitudes = []
         for x in range(2, 7):
-            if self.lifepaths[len(self.lifepaths) - 1][x] is not None:
+            if self.lifepaths[len(self.lifepaths) - 1][x] is not None and self.characters[len(self.characters)-1].getAptitude(self.lifepaths[len(self.lifepaths)-1][x]) < 2:
                 aptitudes.append(self.lifepaths[len(self.lifepaths) - 1][x])
         select = selectAptitude(chargen=self, aptitudes=aptitudes,
                                 placeholder='You get to pick only one of these.')
@@ -393,6 +426,25 @@ class Chargen:
                                                    harm3=self.characters[4].harm3,
                                                    harm3clock=self.characters[4].harm3clock))
 
+        # make the embed
+        embed = discord.Embed(title='Teenage Years',
+                              description='You developed two Skills during your teenage years. This is the first.',
+                              color=0x288830)
+        embed.set_footer(text='Browse through your options using the drop-down list.')
+
+        # then the drop-down list
+        skills = []
+        for x in range(7, 17):
+            if self.lifepaths[len(self.lifepaths) - 1][x] is not None and self.characters[len(self.characters) - 1].getSkill(self.lifepaths[len(self.lifepaths) - 1][x]) < 2:
+                skills.append(self.lifepaths[len(self.lifepaths) - 1][x])
+        select = selectSkill(chargen=self, skills=skills, placeholder='You get to pick two of these.')
+
+        # then the view that will house the drop-down list and the navigation buttons
+        view = ButtonView(select=select, chargen=self)
+
+        # go! be free my lil message! be displayed!
+        await self.thread.send(embed=embed, view=view)
+
     # handles picking the second skill from the teenage years
     async def layer12(self):
         # hi we're here
@@ -411,6 +463,26 @@ class Chargen:
                                                    harm2clock=self.characters[5].harm2clock,
                                                    harm3=self.characters[5].harm3,
                                                    harm3clock=self.characters[5].harm3clock))
+
+        # make the embed
+        embed = discord.Embed(title='Childhood',
+                              description='You developed two Skills during your childhood. This is the second.',
+                              color=0x288830)
+        embed.set_footer(text='Browse through your options using the drop-down list.')
+
+        # then the drop-down list
+        skills = []
+        for x in range(7, 17):
+            if self.lifepaths[len(self.lifepaths) - 1][x] is not None and self.lifepaths[len(self.lifepaths) - 1][x] is not self.selectedskills[len(self.selectedskills)-1] and self.characters[len(self.characters) - 1].getSkill(
+                    self.lifepaths[len(self.lifepaths) - 1][x]) < 2:
+                skills.append(self.lifepaths[len(self.lifepaths) - 1][x])
+        select = selectSkill(chargen=self, skills=skills, placeholder='This is your second pick from these.')
+
+        # then the view that will house the drop-down list and the navigation buttons
+        view = ButtonView(select=select, chargen=self)
+
+        # go! be free my lil message! be displayed!
+        await self.thread.send(embed=embed, view=view)
 
     # handles picking the young adult location
     async def layer13(self):
@@ -451,7 +523,7 @@ class Chargen:
         # then the drop-down list
         aptitudes = []
         for x in range(2, 7):
-            if self.lifepaths[len(self.lifepaths) - 1][x] is not None:
+            if self.lifepaths[len(self.lifepaths) - 1][x] is not None and self.characters[len(self.characters)-1].getAptitude(self.lifepaths[len(self.lifepaths)-1][x]) < 2:
                 aptitudes.append(self.lifepaths[len(self.lifepaths) - 1][x])
         select = selectAptitude(chargen=self, aptitudes=aptitudes,
                                 placeholder='You get to pick only one of these.')
@@ -482,6 +554,25 @@ class Chargen:
                                                    harm3=self.characters[7].harm3,
                                                    harm3clock=self.characters[7].harm3clock))
 
+        # make the embed
+        embed = discord.Embed(title='Childhood',
+                              description='You developed two Skills during your childhood. This is the first.',
+                              color=0x288830)
+        embed.set_footer(text='Browse through your options using the drop-down list.')
+
+        # then the drop-down list
+        skills = []
+        for x in range(7, 17):
+            if self.lifepaths[len(self.lifepaths) - 1][x] is not None and self.characters[len(self.characters) - 1].getSkill(self.lifepaths[len(self.lifepaths) - 1][x]) < 2:
+                skills.append(self.lifepaths[len(self.lifepaths) - 1][x])
+        select = selectSkill(chargen=self, skills=skills, placeholder='You get to pick two of these.')
+
+        # then the view that will house the drop-down list and the navigation buttons
+        view = ButtonView(select=select, chargen=self)
+
+        # go! be free my lil message! be displayed!
+        await self.thread.send(embed=embed, view=view)
+
     # handles picking the second skill from young adulthood
     async def layer17(self):
         # hi we're here
@@ -501,6 +592,25 @@ class Chargen:
                                                    harm3=self.characters[8].harm3,
                                                    harm3clock=self.characters[8].harm3clock))
 
+        # make the embed
+        embed = discord.Embed(title='Childhood',
+                              description='You developed two Skills during your childhood. This is the second.',
+                              color=0x288830)
+        embed.set_footer(text='Browse through your options using the drop-down list.')
+
+        # then the drop-down list
+        skills = []
+        for x in range(7, 17):
+            if self.lifepaths[len(self.lifepaths) - 1][x] is not None and self.lifepaths[len(self.lifepaths) - 1][x] is not self.selectedskills[len(self.selectedskills)-1] and self.characters[len(self.characters) - 1].getSkill(self.lifepaths[len(self.lifepaths) - 1][x]) < 2:
+                skills.append(self.lifepaths[len(self.lifepaths) - 1][x])
+        select = selectSkill(chargen=self, skills=skills, placeholder='This is your second pick from these.')
+
+        # then the view that will house the drop-down list and the navigation buttons
+        view = ButtonView(select=select, chargen=self)
+
+        # go! be free my lil message! be displayed!
+        await self.thread.send(embed=embed, view=view)
+
     # carry ooooooon carry on
     async def nextLayer(self, selection=None, selection1=None):
 
@@ -515,7 +625,7 @@ class Chargen:
                     self.characters[len(self.characters) - 1].addStuff(selection[x])
 
             if selection[2] is not None:
-                self.characters[len(self.characters) - 1].incrementAptitude(name=selection[2], x=1)
+                self.characters[len(self.characters) - 1].incrementAptitude(thread=self.thread, name=selection[2], x=1)
                 await self.layer1()
             else:
                 await self.layerMinus1()
@@ -525,7 +635,7 @@ class Chargen:
             if selection is None:
                 await self.thread.send("Something has gone terribly wrong, please contact us.")
                 raise Exception("Trappings Aptitude Selection Missing")
-            self.characters[len(self.characters)-1].incrementAptitude(name=selection, x=1)
+            self.characters[len(self.characters)-1].incrementAptitude(thread=self.thread, name=selection, x=1)
             await self.layer1()
 
         # birth location
@@ -568,15 +678,18 @@ class Chargen:
         # child aptitude
         elif self.currentlayer == 5:
             # lock in the aptitude selection
-            self.characters[len(self.characters)-1].incrementAptitude(name=selection, x=1)
+            self.characters[len(self.characters)-1].incrementAptitude(thread=self.thread, name=selection, x=1)
             await self.layer6()
 
         # child skill 1
         elif self.currentlayer == 6:
+            self.characters[len(self.characters)-1].incrementSkill(thread=self.thread, name=selection, x=1)
+            self.selectedskills.append(selection)
             await self.layer7()
 
         # child skill 2
         elif self.currentlayer == 7:
+            self.characters[len(self.characters) - 1].incrementSkill(thread=self.thread, name=selection, x=1)
             await self.layer8()
 
         # teen location
@@ -600,14 +713,18 @@ class Chargen:
 
         # teen aptitude
         elif self.currentlayer == 10:
+            self.characters[len(self.characters) - 1].incrementAptitude(thread=self.thread, name=selection, x=1)
             await self.layer11()
 
         # teen skill 1
         elif self.currentlayer == 11:
+            self.characters[len(self.characters) - 1].incrementSkill(thread=self.thread, name=selection, x=1)
+            self.selectedskills.append(selection)
             await self.layer12()
 
         # teen skill 2
         elif self.currentlayer == 12:
+            self.characters[len(self.characters) - 1].incrementSkill(thread=self.thread, name=selection, x=1)
             await self.layer13()
 
         # ya location
@@ -631,14 +748,18 @@ class Chargen:
 
         # ya aptitude
         elif self.currentlayer == 15:
+            self.characters[len(self.characters) - 1].incrementAptitude(thread=self.thread, name=selection, x=1)
             await self.layer16()
 
         # ya skill 1
         elif self.currentlayer == 16:
+            self.characters[len(self.characters) - 1].incrementSkill(thread=self.thread, name=selection, x=1)
+            self.selectedskills.append(selection)
             await self.layer17()
 
         # ya skill 2
         elif self.currentlayer == 17:
+            self.characters[len(self.characters) - 1].incrementSkill(thread=self.thread, name=selection, x=1)
             await self.layer18()
 
     # as if nothing really matters
@@ -679,6 +800,7 @@ class Chargen:
         # child skill 2
         elif self.currentlayer == 7:
             self.characters.pop()
+            self.selectedskills.pop()
             await self.layer6()
         # teen location
         elif self.currentlayer == 8:
@@ -700,6 +822,7 @@ class Chargen:
         # teen skill 2
         elif self.currentlayer == 12:
             self.characters.pop()
+            self.selectedskills.pop()
             await self.layer11()
         # ya location
         elif self.currentlayer == 13:
@@ -721,6 +844,7 @@ class Chargen:
         # ya skill 2
         elif self.currentlayer == 17:
             self.characters.pop()
+            self.selectedskills.pop()
             await self.layer16()
 
     def getLayer(self):
@@ -741,12 +865,12 @@ class selectTrappings(discord.ui.Select):
         for x in range(len(trappings)):
             if x != position:
                 options.append(
-                    discord.SelectOption(label=trappings[x][0].capitalize(), description=trappings[x][1][:99], value=x,
+                    discord.SelectOption(label=trappings[x][0].title(), description=trappings[x][1][:99], value=x,
                                          default=False))
 
         if not options:
             options.append(
-                discord.SelectOption(label=trappings[position][0].capitalize(), description=trappings[position][1][:99],
+                discord.SelectOption(label=trappings[position][0].title(), description=trappings[position][1][:99],
                                      value=x, default=False))
 
         super().__init__(placeholder=placeholder, max_values=1, options=options)
@@ -757,12 +881,12 @@ class selectTrappings(discord.ui.Select):
         self.position = int(self.values[0])
         # make the new embed
         if self.trappings[self.position][2] is not None:
-            embed = discord.Embed(title=self.trappings[self.position][0].capitalize(),
+            embed = discord.Embed(title=self.trappings[self.position][0].title(),
                                   description=self.trappings[self.position][
                                                   1] + '\n You\'ll be in your element when you can {} your way out of trouble'.format(
-                                      self.trappings[self.position][2].capitalize()))
+                                      self.trappings[self.position][2].title()))
         else:
-            embed = discord.Embed(title=self.trappings[self.position][0].capitalize(),
+            embed = discord.Embed(title=self.trappings[self.position][0].title(),
                                   description=self.trappings[self.position][
                                                   1] + '\n You\'ll get an additional choice for the Aptitude you make use of the most')
         embed.set_footer(
@@ -883,13 +1007,13 @@ class selectAptitude(discord.ui.Select):
         options = []
         for x in range(len(aptitudes)):
             if x != self.position:
-                printables = db.queryAptitudePrintable(aptitudes[x])
-                options.append(discord.SelectOption(label=printables[0][0], description=printables[0][1][:99], value=x,
+                printables = db.queryAptitudeToPrint(aptitudes[x])
+                options.append(discord.SelectOption(label=printables[0][0].title(), description=printables[0][1][:99], value=x,
                                                     default=False))
         if not options:
-            printables = db.queryAptitudePrintable(aptitudes[self.position])
+            printables = db.queryAptitudeToPrint(aptitudes[self.position])
             options.append(
-                discord.SelectOption(label=printables[0][0], description=printables[0][1][:99], value=x, default=False))
+                discord.SelectOption(label=printables[0][0].title(), description=printables[0][1][:99], value=x, default=False))
 
         super().__init__(placeholder=placeholder, max_values=1, options=options)
 
@@ -899,9 +1023,9 @@ class selectAptitude(discord.ui.Select):
         self.position = int(self.values[0])
 
         # get the printables
-        printables = db.queryAptitudePrintable(self.aptitudes[self.position])
+        printables = db.queryAptitudeToPrint(self.aptitudes[self.position])
         # make the new embed
-        embed = discord.Embed(title=printables[0][0], description=printables[0][1][:99], color=0x288830)
+        embed = discord.Embed(title=printables[0][0].title(), description=printables[0][1][:99], color=0x288830)
         embed.set_footer(
             text='Browse through the Aptitudes using the drop-down list and confirm your selection using the green tick button.')
         # make the new drop-down list
@@ -909,6 +1033,51 @@ class selectAptitude(discord.ui.Select):
                                 placeholder=self.placeholder)
         # make the view with the two buttons
         view = ButtonView(select=select, chargen=self.chargen, selection=self.aptitudes[self.position])
+        # ship it
+        await interaction.message.edit(embed=embed, view=view)
+        try:
+            await interaction.response.send_message(" ")
+        except:
+            pass
+
+
+class selectSkill(discord.ui.Select):
+
+    # constructor needs the chargen to pass onto its buttons, the selected skills, the position of the currently displayed aptitude to be removed from the list, and the placeholder text
+    def __init__(self, chargen, skills, position=None, placeholder=''):
+        self.chargen = chargen
+        self.skills = skills
+        self.position = position
+
+        # the aptitude options
+        options = []
+        for x in range(len(skills)):
+            if x != self.position:
+                printables = db.querySkillToPrint(skills[x])
+                options.append(discord.SelectOption(label=printables[0][0].title(), description=printables[0][1][:99], value=x,
+                                                    default=False))
+        if not options:
+            printables = db.querySkillToPrint(skills[self.position])
+            options.append(
+                discord.SelectOption(label=printables[0][0].title(), description=printables[0][1][:99], value=x, default=False))
+
+        super().__init__(placeholder=placeholder, max_values=1, options=options)
+
+    # once the user picks an option the embed is updated to display what they chose and a new drop-down list is generated
+    async def callback(self, interaction: discord.Interaction):
+        # get the index of the selected option
+        self.position = int(self.values[0])
+
+        # get the printables
+        printables = db.querySkillToPrint(self.skills[self.position])
+        # make the new embed
+        embed = discord.Embed(title=printables[0][0].title(), description=printables[0][1][:99], color=0x288830)
+        embed.set_footer(
+            text='Browse through the Skills using the drop-down list and confirm your selection using the green tick button.')
+        # make the new drop-down list
+        select = selectSkill(chargen=self.chargen, skills=self.skills, position=self.position, placeholder=self.placeholder)
+        # make the view with the two buttons
+        view = ButtonView(select=select, chargen=self.chargen, selection=self.skills[self.position])
         # ship it
         await interaction.message.edit(embed=embed, view=view)
         try:
