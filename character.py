@@ -150,33 +150,6 @@ class Character:
                 return self.skills[y][name][0]
         raise Exception("Skill Name not Found")
 
-    def getServer(self):
-        return self.server
-
-    def getThread(self):
-        return self.thread
-
-    def getName(self):
-        return self.name
-
-    def getTraits(self):
-        return self.traits
-
-    def changeLuck(self, luck):
-        self.luck = self.luck + luck
-
-    def getLuck(self):
-        return self.luck
-
-    def changeRealization(self, realization):
-        self.realization = self.realization + realization
-
-    def getRealization(self):
-        return self.realization
-
-    def getHarm(self):
-        return [self.harm1, self.harm2, self.harm3]
-
     def incrementAptitude(self, thread, name, x):
         if name not in self.aptitudes.keys():
             thread.send("Something has gone terribly wrong, please contact us.")

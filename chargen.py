@@ -42,6 +42,10 @@ class Chargen:
         if len(self.locations) == 0:
             self.thread.send("Something has gone terribly wrong, please contact us.")
             raise Exception("Locations query empty.")
+        aptitudenamestemp = db.queryAptitudeNames()
+        self.aptitudes = []
+        for n in aptitudenamestemp:
+            self.aptitudes.append(n[0])
 
     # handles picking trappings
     async def layer0(self):
@@ -104,12 +108,7 @@ class Chargen:
                               color=0x288830)
         embed.set_footer(text='Browse through your options using the drop-down list.')
 
-        # then the drop-down list
-        aptitudenamestemp = db.queryAptitudeNames()
-        aptitudenames = []
-        for n in aptitudenamestemp:
-            aptitudenames.append(n[0])
-        select = selectAptitude(chargen=self, aptitudes=aptitudenames,
+        select = selectAptitude(chargen=self, aptitudes=self.aptitudes,
                                 placeholder='You get to pick only one of these.')
 
         # then the view that will house the drop-down list and the navigation buttons
@@ -181,6 +180,11 @@ class Chargen:
             await self.thread.send("Something has gone terribly wrong, please contact us.")
             raise Exception("Lifepaths query empty.")
 
+        # check if the conditions for them are fulfilled
+        for x in range(len(lifepaths)):
+            if x < len(lifepaths) and lifepaths[x][19] is not None and not await self.parseCondition(lifepaths[x][19]):
+                lifepaths.pop(x)
+
         # we make the embed
         embed = discord.Embed(title='Childhood',
                               description='You can trace your affinity for certain skills all the way back here.',
@@ -227,7 +231,7 @@ class Chargen:
         # then the drop-down list
         aptitudes = []
         for x in range(2, 7):
-            if self.lifepaths[len(self.lifepaths)-1][x] is not None and self.characters[len(self.characters)-1].getAptitude(self.lifepaths[len(self.lifepaths)-1][x]) < 2:
+            if self.lifepaths[len(self.lifepaths) - 1][x] is not None and self.characters[len(self.characters) - 1].getAptitude(self.lifepaths[len(self.lifepaths) - 1][x]) < 2:
                 aptitudes.append(self.lifepaths[len(self.lifepaths) - 1][x])
         select = selectAptitude(chargen=self, aptitudes=aptitudes,
                                 placeholder='You get to pick only one of these.')
@@ -267,7 +271,7 @@ class Chargen:
         # then the drop-down list
         skills = []
         for x in range(7, 17):
-            if self.lifepaths[len(self.lifepaths) - 1][x] is not None and self.characters[len(self.characters)-1].getSkill(self.lifepaths[len(self.lifepaths)-1][x]) < 2:
+            if self.lifepaths[len(self.lifepaths) - 1][x] is not None and self.characters[len(self.characters) - 1].getSkill(self.lifepaths[len(self.lifepaths) - 1][x]) < 2:
                 skills.append(self.lifepaths[len(self.lifepaths) - 1][x])
         select = selectSkill(chargen=self, skills=skills, placeholder='You get to pick two of these.')
 
@@ -306,7 +310,7 @@ class Chargen:
         # then the drop-down list
         skills = []
         for x in range(7, 17):
-            if self.lifepaths[len(self.lifepaths)-1][x] is not None and self.lifepaths[len(self.lifepaths)-1][x] is not self.selectedskills[len(self.selectedskills) - 1] and self.characters[len(self.characters) - 1].getSkill(self.lifepaths[len(self.lifepaths) - 1][x]) < 2:
+            if self.lifepaths[len(self.lifepaths) - 1][x] is not None and self.lifepaths[len(self.lifepaths) - 1][x] is not self.selectedskills[len(self.selectedskills) - 1] and self.characters[len(self.characters) - 1].getSkill(self.lifepaths[len(self.lifepaths) - 1][x]) < 2:
                 skills.append(self.lifepaths[len(self.lifepaths) - 1][x])
         select = selectSkill(chargen=self, skills=skills, placeholder='This is your second pick from these.')
 
@@ -349,6 +353,11 @@ class Chargen:
         if len(lifepaths) == 0:
             await self.thread.send("Something has gone terribly wrong, please contact us.")
             raise Exception("Lifepaths query empty.")
+
+        # check if the conditions for them are fulfilled
+        for x in range(len(lifepaths)):
+            if lifepaths[x][19] is not None and not self.parseCondition(lifepaths[x][19]):
+                del lifepaths[x]
 
         # we make the embed to display the first lifepath
         embed = discord.Embed(title='Teenage Years',
@@ -395,7 +404,7 @@ class Chargen:
         # then the drop-down list
         aptitudes = []
         for x in range(2, 7):
-            if self.lifepaths[len(self.lifepaths) - 1][x] is not None and self.characters[len(self.characters)-1].getAptitude(self.lifepaths[len(self.lifepaths)-1][x]) < 2:
+            if self.lifepaths[len(self.lifepaths) - 1][x] is not None and self.characters[len(self.characters) - 1].getAptitude(self.lifepaths[len(self.lifepaths) - 1][x]) < 2:
                 aptitudes.append(self.lifepaths[len(self.lifepaths) - 1][x])
         select = selectAptitude(chargen=self, aptitudes=aptitudes,
                                 placeholder='You get to pick only one of these.')
@@ -473,8 +482,7 @@ class Chargen:
         # then the drop-down list
         skills = []
         for x in range(7, 17):
-            if self.lifepaths[len(self.lifepaths) - 1][x] is not None and self.lifepaths[len(self.lifepaths) - 1][x] is not self.selectedskills[len(self.selectedskills)-1] and self.characters[len(self.characters) - 1].getSkill(
-                    self.lifepaths[len(self.lifepaths) - 1][x]) < 2:
+            if self.lifepaths[len(self.lifepaths) - 1][x] is not None and self.lifepaths[len(self.lifepaths) - 1][x] is not self.selectedskills[len(self.selectedskills) - 1] and self.characters[len(self.characters) - 1].getSkill(self.lifepaths[len(self.lifepaths) - 1][x]) < 2:
                 skills.append(self.lifepaths[len(self.lifepaths) - 1][x])
         select = selectSkill(chargen=self, skills=skills, placeholder='This is your second pick from these.')
 
@@ -523,7 +531,7 @@ class Chargen:
         # then the drop-down list
         aptitudes = []
         for x in range(2, 7):
-            if self.lifepaths[len(self.lifepaths) - 1][x] is not None and self.characters[len(self.characters)-1].getAptitude(self.lifepaths[len(self.lifepaths)-1][x]) < 2:
+            if self.lifepaths[len(self.lifepaths) - 1][x] is not None and self.characters[len(self.characters) - 1].getAptitude(self.lifepaths[len(self.lifepaths) - 1][x]) < 2:
                 aptitudes.append(self.lifepaths[len(self.lifepaths) - 1][x])
         select = selectAptitude(chargen=self, aptitudes=aptitudes,
                                 placeholder='You get to pick only one of these.')
@@ -601,7 +609,7 @@ class Chargen:
         # then the drop-down list
         skills = []
         for x in range(7, 17):
-            if self.lifepaths[len(self.lifepaths) - 1][x] is not None and self.lifepaths[len(self.lifepaths) - 1][x] is not self.selectedskills[len(self.selectedskills)-1] and self.characters[len(self.characters) - 1].getSkill(self.lifepaths[len(self.lifepaths) - 1][x]) < 2:
+            if self.lifepaths[len(self.lifepaths) - 1][x] is not None and self.lifepaths[len(self.lifepaths) - 1][x] is not self.selectedskills[len(self.selectedskills) - 1] and self.characters[len(self.characters) - 1].getSkill(self.lifepaths[len(self.lifepaths) - 1][x]) < 2:
                 skills.append(self.lifepaths[len(self.lifepaths) - 1][x])
         select = selectSkill(chargen=self, skills=skills, placeholder='This is your second pick from these.')
 
@@ -635,7 +643,7 @@ class Chargen:
             if selection is None:
                 await self.thread.send("Something has gone terribly wrong, please contact us.")
                 raise Exception("Trappings Aptitude Selection Missing")
-            self.characters[len(self.characters)-1].incrementAptitude(thread=self.thread, name=selection, x=1)
+            self.characters[len(self.characters) - 1].incrementAptitude(thread=self.thread, name=selection, x=1)
             await self.layer1()
 
         # birth location
@@ -678,12 +686,12 @@ class Chargen:
         # child aptitude
         elif self.currentlayer == 5:
             # lock in the aptitude selection
-            self.characters[len(self.characters)-1].incrementAptitude(thread=self.thread, name=selection, x=1)
+            self.characters[len(self.characters) - 1].incrementAptitude(thread=self.thread, name=selection, x=1)
             await self.layer6()
 
         # child skill 1
         elif self.currentlayer == 6:
-            self.characters[len(self.characters)-1].incrementSkill(thread=self.thread, name=selection, x=1)
+            self.characters[len(self.characters) - 1].incrementSkill(thread=self.thread, name=selection, x=1)
             self.selectedskills.append(selection)
             await self.layer7()
 
@@ -850,6 +858,173 @@ class Chargen:
     def getLayer(self):
         return self.currentlayer
 
+    # this function returns true if the condition of a lifepath is met
+    async def parseCondition(self, condition):
+        # split the condition into parts
+        temptokens = condition.split(" ")
+        # cleanup the input
+        tokens = [token.strip() for token in temptokens]
+        # go
+        return await self.solveExpression(tokens, 0)
+
+    # oh boy, takes a tokens list, a position in it, and does stuff to it
+    async def solveExpression(self, tokens, x):
+
+        # if there's only one element in the list, every operation has been completed and only the final result remains so we return it
+        if len(tokens) == 1:
+            return tokens[0]
+
+        # before we do anything, prevent index errors
+        if x >= len(tokens):
+            x = 0
+
+        # if the token is not an operator, move on, this is here for efficiency, the method will recur if a non-operator not on this list appears
+        if tokens[x] in [True, False, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8]:
+            return await self.solveExpression(tokens, x + 1)
+
+        # if the token refers to one of the misfits stats, replace the text with that stat score
+        if tokens[x] in self.aptitudes:
+            tokens[x] = self.characters[-1].getAptitude(tokens[x])
+            return await self.solveExpression(tokens, x + 1)
+
+        # if the token is opening parentheses, check if theres only one element inside them in order to delete them
+        if tokens[x] == "(":
+            if tokens[x + 2] == ")":
+                del tokens[x]
+                del tokens[x + 2]
+            return await self.solveExpression(tokens, x + 1)
+
+        # if the token is closing parentheses, check if theres only one element inside them in order to delete them otherwise go back to the first parentheses
+        if tokens[x] == ")":
+            if tokens[x - 2] == "(":
+                del tokens[x]
+                del tokens[x + 2]
+            return await self.solveExpression(tokens, tokens.index("("))
+
+        # if the token is multiplication, check that we aren't violating left to right or are trying to use it on parentheses and try to execute it, if there's an error, probably due to an aptitude conversion not having been completed, move on
+        if tokens[x] == "*":
+            if (not x <= 2 or x <= 2 and tokens[x - 2] not in ["*", "/"]) and (not x <= 1 or x <= 1 and tokens[x - 1] != ")") and (not x < len(tokens) - 1 or x < len(tokens) - 1 and tokens[x + 1] != "("):
+                try:
+                    tokens[x - 1] = int(tokens[x - 1]) * int(tokens[x + 1])
+                    del tokens[x + 1:x + 3]
+                except:
+                    pass
+            return await self.solveExpression(tokens, x + 1)
+
+        # if the token is division, check that we aren't violating left to right or are trying to use it on parentheses and try to execute it, if there's an error, probably due to an aptitude conversion not having been completed, move on
+        if tokens[x] == "/":
+            if (not x <= 2 or x <= 2 and tokens[x - 2] not in ["*", "/"]) and (not x <= 1 or x <= 1 and tokens[x - 1] != ")") and (not x < len(tokens) - 1 or x < len(tokens) - 1 and tokens[x + 1] != "("):
+                try:
+                    tokens[x - 1] = int(tokens[x - 1]) / int(tokens[x + 1])
+                    del tokens[x:x + 2]
+                except:
+                    pass
+            return await self.solveExpression(tokens, x + 1)
+
+        # if the token is addition, check that we aren't violating order of operations or are trying to use it on parentheses and try to execute it, if there's an error, probably due to an aptitude conversion not having been completed, move on
+        if tokens[x] == "+":
+            if (not x <= 2 or x <= 2 and tokens[x - 2] not in ["*", "/", "+", "-"]) and (not x <= 1 or x <= 1 and tokens[x - 1] != ")") and (not x < len(tokens) - 1 or x < len(tokens) - 1 and tokens[x + 1] != "(") and (not x < len(tokens) - 2 or x < len(tokens) - 2 and tokens[x + 2] not in ["*", "/"]):
+                try:
+                    tokens[x - 1] = int(tokens[x - 1]) + int(tokens[x + 1])
+                    del tokens[x:x + 2]
+                except:
+                    pass
+            return await self.solveExpression(tokens, x + 1)
+
+        # if the token is subtraction, check that we aren't violating order of operations or are trying to use it on parentheses and try to execute it, if there's an error, probably due to an aptitude conversion not having been completed, move on
+        if tokens[x] == "-":
+            if (not x <= 2 or x <= 2 and tokens[x - 2] not in ["*", "/", "+", "-"]) and (not x <= 1 or x <= 1 and tokens[x - 1] != ")") and (not x < len(tokens) - 1 or x < len(tokens) - 1 and tokens[x + 1] != "(") and (not x < len(tokens) - 2 or x < len(tokens) - 2 and tokens[x + 2] not in ["*", "/"]):
+                try:
+                    tokens[x - 1] = int(tokens[x - 1]) - int(tokens[x + 1])
+                    del tokens[x:x + 2]
+                except:
+                    pass
+            return await self.solveExpression(tokens, x + 1)
+
+        # if the token is less than, check that we aren't violating order of operations or are trying to use it on parentheses and try to execute it, if there's an error, probably due to an aptitude conversion not having been completed, move on
+        if tokens[x] == "<":
+            if (not x <= 2 or x <= 2 and tokens[x - 2] not in ["*", "/", "+", "-", "<", ">", "=", "==", "<=", "=<", ">=", "=<", "!=", "=/="]) and (not x <= 1 or x <= 1 and tokens[x - 1] != ")") and (not x < len(tokens) - 1 or x < len(tokens) - 1 and tokens[x + 1] != "(") and (not x < len(tokens) - 2 or x < len(tokens) - 2 and tokens[x + 2] not in ["*", "/", "+", "-"]):
+                try:
+                    tokens[x - 1] = int(tokens[x - 1]) < int(tokens[x + 1])
+                    del tokens[x:x + 2]
+                except:
+                    pass
+            return await self.solveExpression(tokens, x + 1)
+
+        # if the token is greater than, check that we aren't violating order of operations or are trying to use it on parentheses and try to execute it, if there's an error, probably due to an aptitude conversion not having been completed, move on
+        if tokens[x] == ">":
+            if (not x <= 2 or x <= 2 and tokens[x - 2] not in ["*", "/", "+", "-", "<", ">", "=", "==", "<=", "=<", ">=", "=<", "!=", "=/="]) and (not x <= 1 or x <= 1 and tokens[x - 1] != ")") and (not x < len(tokens) - 1 or x < len(tokens) - 1 and tokens[x + 1] != "(") and (not x < len(tokens) - 2 or x < len(tokens) - 2 and tokens[x + 2] not in ["*", "/", "+", "-"]):
+                try:
+                    tokens[x - 1] = int(tokens[x - 1]) > int(tokens[x + 1])
+                    del tokens[x:x + 2]
+                except:
+                    pass
+            return await self.solveExpression(tokens, x + 1)
+
+        # if the token is equals, check that we aren't violating order of operations or are trying to use it on parentheses and try to execute it, if there's an error, probably due to an aptitude conversion not having been completed, move on
+        if tokens[x] == "=" or tokens[x] == "==":
+            if (not x <= 2 or x <= 2 and tokens[x - 2] not in ["*", "/", "+", "-", "<", ">", "=", "==", "<=", "=<", ">=", "=<", "!=", "=/="]) and (not x <= 1 or x <= 1 and tokens[x - 1] != ")") and (not x < len(tokens) - 1 or x < len(tokens) - 1 and tokens[x + 1] != "(") and (not x < len(tokens) - 2 or x < len(tokens) - 2 and tokens[x + 2] not in ["*", "/", "+", "-"]):
+                try:
+                    tokens[x - 1] = int(tokens[x - 1]) == int(tokens[x + 1])
+                    del tokens[x:x + 2]
+                except:
+                    pass
+            return await self.solveExpression(tokens, x + 1)
+
+        # if the token is less or equal than, check that we aren't violating order of operations or are trying to use it on parentheses and try to execute it, if there's an error, probably due to an aptitude conversion not having been completed, move on
+        if tokens[x] == "<=" or tokens[x] == "=<":
+            if (not x <= 2 or x <= 2 and tokens[x - 2] not in ["*", "/", "+", "-", "<", ">", "=", "==", "<=", "=<", ">=", "=<", "!=", "=/="]) and (not x <= 1 or x <= 1 and tokens[x - 1] != ")") and (not x < len(tokens) - 1 or x < len(tokens) - 1 and tokens[x + 1] != "(") and (not x < len(tokens) - 2 or x < len(tokens) - 2 and tokens[x + 2] not in ["*", "/", "+", "-"]):
+                try:
+                    tokens[x - 1] = int(tokens[x - 1]) <= int(tokens[x + 1])
+                    del tokens[x:x + 2]
+                except:
+                    pass
+            return await self.solveExpression(tokens, x + 1)
+
+        # if the token is greater or equal than, check that we aren't violating order of operations or are trying to use it on parentheses and try to execute it, if there's an error, probably due to an aptitude conversion not having been completed, move on
+        if tokens[x] == ">=" or tokens[x] == "=>":
+            if (not x <= 2 or x <= 2 and tokens[x - 2] not in ["*", "/", "+", "-", "<", ">", "=", "==", "<=", "=<", ">=", "=<", "!=", "=/="]) and (not x <= 1 or x <= 1 and tokens[x - 1] != ")") and (not x < len(tokens) - 1 or x < len(tokens) - 1 and tokens[x + 1] != "(") and (not x < len(tokens) - 2 or x < len(tokens) - 2 and tokens[x + 2] not in ["*", "/", "+", "-"]):
+                try:
+                    tokens[x - 1] = int(tokens[x - 1]) >= int(tokens[x + 1])
+                    del tokens[x:x + 2]
+                except:
+                    pass
+            return await self.solveExpression(tokens, x + 1)
+
+        # if the token is not equals, check that we aren't violating order of operations or are trying to use it on parentheses and try to execute it, if there's an error, probably due to an aptitude conversion not having been completed, move on
+        if tokens[x] == "!=" or tokens[x] == "=/=":
+            if (not x <= 2 or x <= 2 and tokens[x - 2] not in ["*", "/", "+", "-", "<", ">", "=", "==", "<=", "=<", ">=", "=<", "!=", "=/="]) and (not x <= 1 or x <= 1 and tokens[x - 1] != ")") and (not x < len(tokens) - 1 or x < len(tokens) - 1 and tokens[x + 1] != "(") and (not x < len(tokens) - 2 or x < len(tokens) - 2 and tokens[x + 2] not in ["*", "/", "+", "-"]):
+                try:
+                    tokens[x - 1] = int(tokens[x - 1]) != int(tokens[x + 1])
+                    del tokens[x:x + 2]
+                except:
+                    pass
+            return await self.solveExpression(tokens, x + 1)
+
+        # if the token is NOT, then check that we're operating on a boolean before doing it
+        if tokens[x] == "NOT":
+            if tokens[x + 1] in [True, False]:
+                tokens[x] = not tokens[x + 1]
+                del tokens[x + 1]
+            return await self.solveExpression(tokens, x + 1)
+
+        # if the token is AND, check that we're not violating order of operations and that we're working on booleans before doing it
+        if tokens[x] == "AND":
+            if (not x <= 2 or x <= 2 and tokens[x - 2] not in ["NOT", "AND"]) and (not x <= 1 or x <= 1 and tokens[x - 1] in [True, False]) and (not x < len(tokens) - 1 or x < len(tokens) - 1 and tokens[x + 1] in [True, False]):
+                tokens[x - 1] = tokens[x - 1] and tokens[x + 1]
+                del tokens[x:x + 2]
+            return await self.solveExpression(tokens, x + 1)
+
+        # if the token is OR, check that we're not violating order of operations and that we're working on booleans before doing it
+        if tokens[x] == "OR":
+            if (not x <= 2 or (x <= 2 and tokens[x - 2] not in ["NOT", "AND", "OR"])) and (not x <= 1 or x <= 1 and tokens[x - 1] in [True, False]) and (not x < len(tokens) - 1 or x < len(tokens) - 1 and tokens[x + 1] in [True, False]) and (not x < len(tokens) - 2 or x < len(tokens) - 2 and tokens[x + 2] not in ["NOT", "AND"]):
+                tokens[x - 1] = tokens[x - 1] or tokens[x + 1]
+                del tokens[x:x + 2]
+            return await self.solveExpression(tokens, x + 1)
+
+        # love recursion, i said, lying through my teeth
+        return await self.solveExpression(tokens, x + 1)
+
 
 # this class handles displaying the drop-down list of lifepaths
 class selectTrappings(discord.ui.Select):
@@ -1008,12 +1183,14 @@ class selectAptitude(discord.ui.Select):
         for x in range(len(aptitudes)):
             if x != self.position:
                 printables = db.queryAptitudeToPrint(aptitudes[x])
-                options.append(discord.SelectOption(label=printables[0][0].title(), description=printables[0][1][:99], value=x,
-                                                    default=False))
+                options.append(
+                    discord.SelectOption(label=printables[0][0].title(), description=printables[0][1][:99], value=x,
+                                         default=False))
         if not options:
             printables = db.queryAptitudeToPrint(aptitudes[self.position])
             options.append(
-                discord.SelectOption(label=printables[0][0].title(), description=printables[0][1][:99], value=x, default=False))
+                discord.SelectOption(label=printables[0][0].title(), description=printables[0][1][:99], value=x,
+                                     default=False))
 
         super().__init__(placeholder=placeholder, max_values=1, options=options)
 
@@ -1054,12 +1231,14 @@ class selectSkill(discord.ui.Select):
         for x in range(len(skills)):
             if x != self.position:
                 printables = db.querySkillToPrint(skills[x])
-                options.append(discord.SelectOption(label=printables[0][0].title(), description=printables[0][1][:99], value=x,
-                                                    default=False))
+                options.append(
+                    discord.SelectOption(label=printables[0][0].title(), description=printables[0][1][:99], value=x,
+                                         default=False))
         if not options:
             printables = db.querySkillToPrint(skills[self.position])
             options.append(
-                discord.SelectOption(label=printables[0][0].title(), description=printables[0][1][:99], value=x, default=False))
+                discord.SelectOption(label=printables[0][0].title(), description=printables[0][1][:99], value=x,
+                                     default=False))
 
         super().__init__(placeholder=placeholder, max_values=1, options=options)
 
@@ -1075,7 +1254,8 @@ class selectSkill(discord.ui.Select):
         embed.set_footer(
             text='Browse through the Skills using the drop-down list and confirm your selection using the green tick button.')
         # make the new drop-down list
-        select = selectSkill(chargen=self.chargen, skills=self.skills, position=self.position, placeholder=self.placeholder)
+        select = selectSkill(chargen=self.chargen, skills=self.skills, position=self.position,
+                             placeholder=self.placeholder)
         # make the view with the two buttons
         view = ButtonView(select=select, chargen=self.chargen, selection=self.skills[self.position])
         # ship it
