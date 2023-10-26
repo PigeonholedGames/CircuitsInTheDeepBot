@@ -17,7 +17,7 @@ gamedata = gd.cursor()
 
 # function to query the lifepaths database
 def queryLifepath(location, age, links):
-    q = lifepaths.execute(
+    q = gamedata.execute(
         "SELECT NAME,LINKS,APTITUDES0,APTITUDES1,APTITUDES2,APTITUDES3,APTITUDES4,SKILLS0,SKILLS1,SKILLS2,SKILLS3,SKILLS4,SKILLS5,SKILLS6,SKILLS7,SKILLS8,SKILLS9,DESCRIPTION,QUESTIONS,CONSTRAINTS,END FROM {} "
         "WHERE AGE='{}' "
         "AND ID IN ({})".format(location, age, links))
@@ -26,14 +26,14 @@ def queryLifepath(location, age, links):
 
 # lighter function to query the lifepaths database, to be used for getting birth lifepaths
 def queryLifepaths(location, age):
-    q = lifepaths.execute(
+    q = gamedata.execute(
         "SELECT NAME,LINKS,APTITUDES0,APTITUDES1,APTITUDES2,APTITUDES3,APTITUDES4,SKILLS0,SKILLS1,SKILLS2,SKILLS3,SKILLS4,SKILLS5,SKILLS6,SKILLS7,SKILLS8,SKILLS9,DESCRIPTION,QUESTIONS,END FROM {} "
         "WHERE AGE='{}' ".format(location, age))
     return q.fetchall()
 
 
 def queryAltLifepaths(location, age):
-    q = lifepaths.execute(
+    q = gamedata.execute(
         "SELECT NAME,LINKS,APTITUDES0,APTITUDES1,APTITUDES2,APTITUDES3,APTITUDES4,SKILLS0,SKILLS1,SKILLS2,SKILLS3,SKILLS4,SKILLS5,SKILLS6,SKILLS7,SKILLS8,SKILLS9,DESCRIPTION,QUESTIONS,END FROM *"
         "WHERE AGE='{}'"
         "AND ENTRY CONTAINS '{}'".format(location, age))
@@ -72,12 +72,6 @@ def querySkillToPrint(name):
 # function to fetch skill names
 def querySkillNames():
     q = gamedata.execute("SELECT NAME FROM SKILLS")
-    return q.fetchall()
-
-
-# function to fetch playbooks
-def queryPlaybooks():
-    q = gamedata.execute("SELECT * FROM PLAYBOOKS")
     return q.fetchall()
 
 
