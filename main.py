@@ -25,10 +25,11 @@ class circbot(discord.Client):
         if channel.permissions_for(server.me).send_messages:
             await channel.send("Hello! Thank you for your interest in Circuits In the Deep!")
             await channel.send("Please hold while we remodel your server.")
-            await asyncio.sleep(1.5)
-            await channel.send(":smiley:")
             await asyncio.sleep(2.5)
+            await channel.send(":smiley:")
+            await asyncio.sleep(1.5)
             await channel.send("Please do not delete or rename the bot controls category or its text channels.")
+            await channel.send("In fact I recommend muting them to avoid spam.")
             await channel.send("Type /help to see available commands.")
 
         # actually setting stuff up
@@ -58,7 +59,7 @@ async def self(interaction: discord.Interaction):
 async def self(interaction: discord.Interaction):
     await commands.create_channels(interaction.guild)
     await interaction.response.send_message("Category and Channels have been remade, please do not delete or rename "
-                                            "them.", ephemeral=True)
+                                            "them.", ephemeral=False)
 
 
 # create command, starts up character creation

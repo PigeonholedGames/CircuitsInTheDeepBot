@@ -1,4 +1,6 @@
+import asyncio
 import discord
+
 import db
 import character
 
@@ -7,19 +9,13 @@ import character
 async def begin(thread, author):
     # pings the player otherwise they won't be added to the thread
     await thread.send(f"Hi {author.mention}, we'll make a character here.")
-    # await asyncio.sleep(2.00)
-    # explanation messages
-    # await thread.send("Character creation in Circuits in the Deep uses a lifepath system.")
-    # await asyncio.sleep(0.95)
-    # await thread.send("This means that we'll go through the broad strokes of your backstory and you'll decide what you were doing at each stage of your life.")
-    # await asyncio.sleep(0.95)
-    # await thread.send("Your choices will grant you some stats and unlock different lifepaths later down the line.")
-    # await asyncio.sleep(0.95)
-    # await thread.send("Without further ado:")
-    # await asyncio.sleep(0.95)
-    # begin!
-    gen = Chargen(thread, author)
-    await gen.layer0()
+    await asyncio.sleep(2.00)
+
+    # make the message that checks if the user wants a tutorial
+    embed = discord.Embed(description='Would you like some basic info about how character creation works?')
+    view = IntroView(thread=thread, author=author)
+
+    await thread.send(embed=embed, view=view)
 
 
 # oh boy here we go
@@ -76,26 +72,6 @@ class Chargen:
         # GO! Message, I choose you!
         await self.thread.send(embed=embed, view=view)
 
-    # handles picking a birth location
-    async def layer1(self):
-        # hi we're here
-        self.currentlayer = 1
-
-        # make the initial embed
-        embed = discord.Embed(title='Birth',
-                              description='OTHER LOCATIONS UNDER CONSTRUCTION :pensive:',
-                              color=0x288830)
-        embed.set_footer(text="Browse through the available locations using the drop-down list.")
-
-        # then the drop-down menu
-        select = selectLocation(chargen=self, locations=self.locations, placeholder='Where were you born?')
-
-        # then the view which will house the drop-down list and the navigation buttons
-        view = ButtonView(select=select, chargen=self)
-
-        # GO! Message, I choose you!
-        await self.thread.send(embed=embed, view=view)
-
     # handles picking a trapping aptitude in case that's necessary
     async def layerMinus1(self):
 
@@ -115,6 +91,26 @@ class Chargen:
         view = ButtonView(select=select, chargen=self)
 
         # go! be free my lil message! be displayed!
+        await self.thread.send(embed=embed, view=view)
+
+    # handles picking a birth location
+    async def layer1(self):
+        # hi we're here
+        self.currentlayer = 1
+
+        # make the initial embed
+        embed = discord.Embed(title='Birth',
+                              description='OTHER LOCATIONS UNDER CONSTRUCTION :pensive:',
+                              color=0x288830)
+        embed.set_footer(text="Browse through the available locations using the drop-down list.")
+
+        # then the drop-down menu
+        select = selectLocation(chargen=self, locations=self.locations, placeholder='Where were you born?')
+
+        # then the view which will house the drop-down list and the navigation buttons
+        view = ButtonView(select=select, chargen=self)
+
+        # GO! Message, I choose you!
         await self.thread.send(embed=embed, view=view)
 
     # handles picking a birth lifepath
@@ -652,7 +648,8 @@ class Chargen:
             if selection is None:
                 await self.thread.send("Something has gone terribly wrong, please contact us.")
                 raise Exception("Birth Lifepath Location Missing")
-            self.location.append(selection)
+            print(selection)
+            self.location.append(selection.replace(" ", ""))
             await self.layer2()
 
         # birth selection
@@ -890,16 +887,9 @@ class Chargen:
         # if the token is opening parentheses, check if theres only one element inside them in order to delete them
         if tokens[x] == "(":
             if tokens[x + 2] == ")":
-                del tokens[x]
                 del tokens[x + 2]
+                del tokens[x]
             return await self.solveExpression(tokens, x + 1)
-
-        # if the token is closing parentheses, check if theres only one element inside them in order to delete them otherwise go back to the first parentheses
-        if tokens[x] == ")":
-            if tokens[x - 2] == "(":
-                del tokens[x]
-                del tokens[x + 2]
-            return await self.solveExpression(tokens, tokens.index("("))
 
         # if the token is multiplication, check that we aren't violating left to right or are trying to use it on parentheses and try to execute it, if there's an error, probably due to an aptitude conversion not having been completed, move on
         if tokens[x] == "*":
@@ -1022,7 +1012,7 @@ class Chargen:
                 del tokens[x:x + 2]
             return await self.solveExpression(tokens, x + 1)
 
-        # love recursion, i said, lying through my teeth
+        # love recursion, I said, lying through my teeth
         return await self.solveExpression(tokens, x + 1)
 
 
@@ -1153,7 +1143,7 @@ class selectLifepath(discord.ui.Select):
 
         if self.chargen.getLayer() > 0:
             embed.set_footer(
-                text="Use the red undo button to go back, or the green tick button to confirm your choice.")
+                text="Use the red ❌ button to go back, or the green tick button to confirm your choice.")
         else:
             embed.set_footer(text="Use the green tick button to confirm your choice.")
 
@@ -1266,6 +1256,82 @@ class selectSkill(discord.ui.Select):
             pass
 
 
+# view class that will make the buttons that start chargen or the tutorial
+class IntroView(discord.ui.View):
+    # we need thread and author to start chargen and to know where to send messages
+    def __init__(self, *, timeout=300, thread, author):
+        super().__init__(timeout=timeout)
+        self.add_item(tutorialButton(thread, author))
+        self.add_item(startButton(thread, author))
+
+
+# button that starts the tutorial
+class tutorialButton(discord.ui.Button):
+    # we need thread and author to start chargen and to know where to send messages
+    def __init__(self, thread, author):
+        self.thread = thread
+        self.author = author
+        super().__init__(emoji=discord.PartialEmoji.from_str("✔"), style=discord.ButtonStyle.green)
+
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.message.delete()
+
+        # tutorial messages
+        await self.thread.send("Circuits in the Deep uses a lifepath system for character creation.")
+        await asyncio.sleep(0.95)
+        await self.thread.send("You can think of this as a short choose your own adventure game where the ending is already decided.")
+        await asyncio.sleep(0.95)
+        await self.thread.send("You will pool the last of your funds together with a couple other misfits in order to start a ***Crew***.")
+        await asyncio.sleep(0.95)
+        await self.thread.send("Character creation will cover the broad strokes of your life right up to that point.")
+        await asyncio.sleep(0.95)
+        await self.thread.send("The world of Circuits in the Deep is a bleak and desolate one, a lot of the time the paths available to you will be limited and difficult.")
+        await asyncio.sleep(0.95)
+        await self.thread.send("However, no matter what you choose, your character won't be mechanically better or worse than the other players.")
+        await asyncio.sleep(0.95)
+        await self.thread.send("Every time you pick a lifepath you'll change what will be available to you in the next stages of your life.")
+        await asyncio.sleep(0.95)
+        await self.thread.send("Additionally, you'll get a choice of an ***Aptitude*** and two ***Skills***, which are some of the core elements of a misfit.")
+        await asyncio.sleep(0.95)
+        await self.thread.send("These will define what aspects of crew life you're best equipped to handle.")
+        await asyncio.sleep(0.95)
+        await self.thread.send("The options will be tailored to each lifepath but the location you are currently at, the class you are currently in, and the situation around you will drastically affect what kinds are broadly available.")
+        await asyncio.sleep(0.95)
+        await self.thread.send("If you're wandering the Wastes alone don't expect to learn how to **Perform** for an audience.")
+        await asyncio.sleep(0.95)
+        await self.thread.send("That being said, before anything else we'll pick your ***Trappings***.")
+        await asyncio.sleep(0.95)
+        await self.thread.send("This will give you an ***Aptitude*** point to make sure you'll be able to fulfil the core fantasy of your character.")
+        await asyncio.sleep(0.95)
+        await self.thread.send("And a set of starting equipment to allow you to do things no other misfit can.")
+        await asyncio.sleep(0.95)
+        await self.thread.send("The starting ***Aptitude*** might open up paths that aren't normally available, which can allow you to be a member of a pre-existing faction or to define your own.")
+        await asyncio.sleep(0.95)
+        await self.thread.send("This should cover the basics, if you have any questions throughout, press the :information: icon for a more detailed explanation of what's in front of you.")
+        await asyncio.sleep(0.95)
+
+        # begin!
+        gen = Chargen(self.thread, self.author)
+        await gen.layer0()
+        return
+
+
+# button that starts chargen
+class startButton(discord.ui.Button):
+    # we need thread and author to start chargen and to know where to send messages
+    def __init__(self, thread, author):
+        self.thread = thread
+        self.author = author
+        super().__init__(emoji=discord.PartialEmoji.from_str("✖"), style=discord.ButtonStyle.red)
+
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.message.delete()
+        # begin!
+        gen = Chargen(self.thread, self.author)
+        await gen.layer0()
+        return
+
+
 # makes a view with buttons and stuff
 class ButtonView(discord.ui.View):
 
@@ -1290,7 +1356,7 @@ class okButton(discord.ui.Button):
         self.selection = selection
         self.selection1 = selection1
 
-        super().__init__(emoji=discord.PartialEmoji.from_str("✅"), style=discord.ButtonStyle.green)
+        super().__init__(emoji=discord.PartialEmoji.from_str("✔"), style=discord.ButtonStyle.green)
 
     # when pressed, the chargen takes over
     async def callback(self, interaction: discord.Interaction):
@@ -1304,10 +1370,22 @@ class undoButton(discord.ui.Button):
     # we need the chargen to take us to the previous step and also prob smth else in the future so yea, that
     def __init__(self, chargen):
         self.chargen = chargen
-        super().__init__(emoji=discord.PartialEmoji.from_str("↩"), style=discord.ButtonStyle.red)
+        super().__init__(emoji=discord.PartialEmoji.from_str("✖"), style=discord.ButtonStyle.red)
 
     # when pressed, the chargen takes over
     async def callback(self, interaction: discord.Interaction):
         await interaction.message.delete()
         await self.chargen.prevLayer()
+        return
+
+
+# button that gives additional information about the current choice
+class infoButton(discord.ui.Button):
+    def __init__(self, chargen):
+        self.chargen = chargen
+        super().__init__(emoji=discord.PartialEmoji.read("information"), style=discord.ButtonStyle.primary)
+
+    # when pressed, the chargen takes over
+    async def callback(self, interaction: discord.Interaction):
+        await self.chargen.addInfo()
         return
