@@ -1,11 +1,5 @@
 import sqlite3
 
-# these methods handle all interactions with the database
-
-# this opens the database where all the lifepaths are stored
-lf = sqlite3.connect('Lifepaths.db')
-lifepaths = lf.cursor()
-
 # this opens the database where all the characters are stored
 char = sqlite3.connect('Characters.db')
 characters = char.cursor()
